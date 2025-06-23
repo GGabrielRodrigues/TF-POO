@@ -9,6 +9,8 @@ import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap; // Importar HashMap
+import java.util.Map; // Importar Map
 
 /**
  * Painel para cadastro e edição de processos de bagagem, com um formulário
@@ -40,27 +42,19 @@ public class CadastroProcessoPanel extends JPanel {
     public CadastroProcessoPanel(Processo processoParaEditar) {
         this.processoEmEdicao = processoParaEditar;
         
-        // Passo 1: O painel principal (this) continua transparente para ver a imagem do MainFrame.
-        // A chamada para setOpaque(false) é feita no método showPanel do MainFrame.
-        
-        // Define o layout do painel principal para centralizar o bloco do formulário.
         setLayout(new GridBagLayout());
 
-        // Passo 2: Criar um painel interno para o formulário. Este painel será opaco.
         JPanel formPanel = new JPanel(new GridBagLayout());
-        // Define uma cor de fundo. Usamos RGBA para dar uma leve transparência (235 de 255).
         formPanel.setBackground(new Color(255, 255, 255, 235));
         formPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.GRAY, 1),
             BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
 
-        // A partir de agora, TODOS os componentes do formulário são adicionados ao 'formPanel'.
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Título
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
@@ -68,7 +62,6 @@ public class CadastroProcessoPanel extends JPanel {
         titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
         formPanel.add(titleLabel, gbc);
 
-        // Campos do formulário
         gbc.gridwidth = 1;
         gbc.gridy++;
         formPanel.add(new JLabel("Base (Ex: GYN):"), gbc);
@@ -110,7 +103,6 @@ public class CadastroProcessoPanel extends JPanel {
         txtCampoEspecifico = new JTextField(20);
         formPanel.add(txtCampoEspecifico, gbc);
         
-        // Seção de Documento
         gbc.gridx = 0;
         gbc.gridy++;
         formPanel.add(new JLabel("Documento Anexado:"), gbc);
@@ -122,17 +114,15 @@ public class CadastroProcessoPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy++;
         gbc.gridwidth = 2;
-        gbc.fill = GridBagConstraints.NONE; // Centraliza o botão
+        gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
         JButton btnAnexarDocumento = new JButton("Anexar Documento...");
         formPanel.add(btnAnexarDocumento, gbc);
 
-        // Botão Salvar
         gbc.gridy++;
         btnSalvar = new JButton("Salvar Processo");
         formPanel.add(btnSalvar, gbc);
         
-        // Listeners
         cmbTipoProcesso.addActionListener(e -> atualizarCampoEspecifico());
         btnAnexarDocumento.addActionListener(e -> selecionarDocumento());
         btnSalvar.addActionListener(e -> salvarProcesso());
@@ -141,6 +131,7 @@ public class CadastroProcessoPanel extends JPanel {
             titleLabel.setText("Edição de Processo");
             btnSalvar.setText("Atualizar Processo");
             preencherCamposParaEdicao(processoEmEdicao);
+            // Desabilita campos chave para edição para manter a integridade do processo
             txtBase.setEnabled(false);
             txtNumeroProcesso.setEnabled(false);
             cmbTipoProcesso.setEnabled(false);
@@ -149,16 +140,13 @@ public class CadastroProcessoPanel extends JPanel {
             atualizarCampoEspecifico();
         }
         
-        // Passo 3: Adiciona o painel do formulário (opaco) ao painel principal (transparente).
-        // As configurações do GridBagConstraints aqui servem para centralizar o formPanel.
         GridBagConstraints gbcMain = new GridBagConstraints();
         gbcMain.gridx = 0;
         gbcMain.gridy = 0;
-        gbcMain.insets = new Insets(20, 20, 20, 20); // Margem externa
+        gbcMain.insets = new Insets(20, 20, 20, 20);
         add(formPanel, gbcMain);
     }
     
-    // O restante dos seus métodos permanece o mesmo
     private void atualizarCampoEspecifico() {
         String tipoSelecionado = (String) cmbTipoProcesso.getSelectedItem();
         switch (tipoSelecionado) {
@@ -238,7 +226,9 @@ public class CadastroProcessoPanel extends JPanel {
              JOptionPane.showMessageDialog(this, "O campo específico é obrigatório.", "Erro", JOptionPane.WARNING_MESSAGE);
             return;
         }
+
         if (processoEmEdicao == null) {
+            // Lógica para NOVO processo
             if (ProcessoRepository.buscarProcessoPorBaseNumero(base, numeroProcesso) != null) {
                 JOptionPane.showMessageDialog(this, "Processo já existe.", "Erro", JOptionPane.ERROR_MESSAGE);
                 return;
@@ -248,7 +238,35 @@ public class CadastroProcessoPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Processo cadastrado!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
             limparCampos();
         } else {
-            // ... (lógica de edição)
+            // Lógica para EDIÇÃO de processo
+            // Atualiza os atributos comuns
+            Map<String, Object> novosDados = new HashMap<>();
+            novosDados.put("dataAbertura", dataAbertura); // Apenas dataAbertura pode ser editada para processos já existentes
+            novosDados.put("caminhoDocumento", tempCaminhoDoc);
+            novosDados.put("tipoArquivoDocumento", tempTipoDoc);
+            novosDados.put("tamanhoArquivoDocumento", tempTamanhoDoc);
+            
+            // Atualiza o atributo específico dependendo do tipo de processo
+            if (processoEmEdicao instanceof DanificacaoBagagem) {
+                ((DanificacaoBagagem) processoEmEdicao).setEtiquetaBagagemDanificada(campoEspecifico);
+            } else if (processoEmEdicao instanceof ExtravioBagagem) {
+                ((ExtravioBagagem) processoEmEdicao).setEtiquetaBagagemExtraviada(campoEspecifico);
+            } else if (processoEmEdicao instanceof ItemEsquecidoAviao) {
+                ((ItemEsquecidoAviao) processoEmEdicao).setNumeroVoo(campoEspecifico);
+            }
+
+            // Chama o método editarInformacoes do processo para aplicar as mudanças
+            processoEmEdicao.editarInformacoes(novosDados); // Usa o Map para os atributos comuns
+
+            // Persiste as alterações no repositório
+            boolean atualizado = ProcessoRepository.atualizarProcesso(processoEmEdicao);
+            if (atualizado) {
+                JOptionPane.showMessageDialog(this, "Processo atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                // Opcional: Voltar para a tela de listagem após a atualização
+                // parentFrame.showPanel(new ListagemProcessosPanel(parentFrame));
+            } else {
+                JOptionPane.showMessageDialog(this, "Falha ao atualizar processo.", "Erro", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
     
@@ -275,5 +293,7 @@ public class CadastroProcessoPanel extends JPanel {
         txtCampoEspecifico.setText("");
         txtCaminhoDocumento.setText("");
         tempCaminhoDoc = null;
+        tempTipoDoc = null;
+        tempTamanhoDoc = 0;
     }
 }
