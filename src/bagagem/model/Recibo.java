@@ -11,7 +11,12 @@ import java.util.Map;
  */
 public abstract class Recibo implements Serializable {
 
-    // Atributos
+    // NOVO ATRIBUTO: ID único e sequencial para cada recibo
+    private long id;
+    // Contador estático para gerar IDs sequenciais para Recibo
+    private static long nextIdRecibo = 0; // Inicializa com 0. Será carregado do arquivo ou começará do 1 se for o primeiro.
+
+    // Atributos existentes
     private String base;
     private String numeroProcesso;
     private Date dataAssinatura;
@@ -23,6 +28,9 @@ public abstract class Recibo implements Serializable {
     private long tamanhoArquivoDocumento;
 
     public Recibo(String base, String numeroProcesso, Date dataAssinatura, Processo processoAssociado) {
+        // Atribui o ID e incrementa o contador
+        this.id = ++nextIdRecibo; // Atribui e depois incrementa
+
         if (processoAssociado == null) {
             throw new IllegalArgumentException("Recibo deve estar vinculado a um Processo.");
         }
@@ -32,7 +40,22 @@ public abstract class Recibo implements Serializable {
         this.processoAssociado = processoAssociado;
     }
 
-    // Getters e Setters para todos os atributos
+    // NOVO MÉTODO: Getter para o ID
+    public long getId() {
+        return id;
+    }
+
+    // NOVO MÉTODO: Setter para o nextIdRecibo (para ser usado pelo repositório ao carregar)
+    public static void setNextIdRecibo(long id) {
+        nextIdRecibo = id;
+    }
+
+    // NOVO MÉTODO: Getter para o nextIdRecibo (para ser usado pelo repositório ao salvar)
+    public static long getNextIdRecibo() {
+        return nextIdRecibo;
+    }
+
+    // Getters e Setters para todos os atributos existentes (omitidos para brevidade, mas devem permanecer)
     public String getBase() { return base; }
     public void setBase(String base) { this.base = base; }
     public String getNumeroProcesso() { return numeroProcesso; }
@@ -42,7 +65,6 @@ public abstract class Recibo implements Serializable {
     public Processo getProcessoAssociado() { return processoAssociado; }
     public void setProcessoAssociado(Processo processoAssociado) { this.processoAssociado = processoAssociado; }
 
-    // Getters e Setters para os NOVOS atributos do documento
     public String getCaminhoDocumento() { return caminhoDocumento; }
     public void setCaminhoDocumento(String caminhoDocumento) { this.caminhoDocumento = caminhoDocumento; }
     public String getTipoArquivoDocumento() { return tipoArquivoDocumento; }
@@ -61,6 +83,7 @@ public abstract class Recibo implements Serializable {
     public String toString() {
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
         return "Tipo Recibo: " + this.getClass().getSimpleName() +
+               "\n  ID Recibo: " + this.id + // Incluindo o ID no toString
                "\n  Processo Associado: " + base + "-" + numeroProcesso +
                "\n  Data Assinatura: " + sdf.format(dataAssinatura) +
                (caminhoDocumento != null ? "\n  Documento: " + caminhoDocumento : "");

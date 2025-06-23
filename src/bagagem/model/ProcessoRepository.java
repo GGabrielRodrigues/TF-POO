@@ -14,6 +14,7 @@ public class ProcessoRepository {
 
     private static final String PROCESSOS_FILE = "processos.dat";
     private static final String RECIBOS_FILE = "recibos.dat";
+    private static final String COUNTERS_FILE = "counters.dat"; // NOVO ARQUIVO para os contadores estáticos
     private static final String ROOT_FOLDER_NAME = "BagagemSystemDocs";
 
     private static List<Processo> processos = new ArrayList<>();
@@ -55,6 +56,12 @@ public class ProcessoRepository {
         } catch (IOException e) {
             System.err.println("Erro ao salvar recibos: " + e.getMessage());
         }
+        try (DataOutputStream dos = new DataOutputStream(new FileOutputStream(COUNTERS_FILE))) {
+            dos.writeLong(Processo.getNextIdProcesso());
+            dos.writeLong(Recibo.getNextIdRecibo());
+        } catch (IOException e) {
+            System.err.println("Erro ao salvar contadores de ID: " + e.getMessage());
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -73,6 +80,19 @@ public class ProcessoRepository {
                 recibos = (List<Recibo>) ois.readObject();
             } catch (IOException | ClassNotFoundException e) {
                 recibos = new ArrayList<>();
+            }
+        }
+        
+        // NOVO: Carregar os contadores estáticos
+        File countersFile = new File(COUNTERS_FILE);
+        if (countersFile.exists() && countersFile.length() > 0) {
+            try (DataInputStream dis = new DataInputStream(new FileInputStream(COUNTERS_FILE))) {
+                Processo.setNextIdProcesso(dis.readLong());
+                Recibo.setNextIdRecibo(dis.readLong());
+            } catch (IOException e) {
+                System.err.println("Erro ao carregar contadores de ID: " + e.getMessage());
+                // Se der erro, os contadores permanecerão em 0, e IDs podem ser duplicados em nova execução.
+                // Isso pode ser uma falha grave, então é bom alertar.
             }
         }
     }
@@ -201,6 +221,20 @@ public class ProcessoRepository {
         return null;
     }
 
+    /**
+     * NOVO MÉTODO: Busca um processo pelo seu ID único.
+     * @param id O ID do processo a ser buscado.
+     * @return O objeto Processo correspondente ao ID, ou null se não encontrado.
+     */
+    public static Processo buscarProcessoPorId(long id) {
+        for (Processo p : processos) {
+            if (p.getId() == id) {
+                return p;
+            }
+        }
+        return null;
+    }
+    
     public static List<Recibo> listarRecibosPorProcesso(Processo processo) {
         List<Recibo> recibosDoProcesso = new ArrayList<>();
         if (processo != null) {
@@ -215,11 +249,17 @@ public class ProcessoRepository {
         return recibosDoProcesso;
     }
 
-    public static boolean atualizarProcesso(Processo processoAtualizado) {
+      public static boolean atualizarProcesso(Processo processoAtualizado) {
+        // ... (código existente) ...
+        // Se você decidiu que Base e NumeroProcesso não podem ser alterados, 
+        // a busca para atualização ainda pode ser por eles.
+        // Ou, para consistência com o ID, você poderia buscar pelo ID do processoAtualizado.
+        // Exemplo:
         if (processoAtualizado == null) return false;
         for (int i = 0; i < processos.size(); i++) {
             Processo p = processos.get(i);
-            if (p.getBase().equals(processoAtualizado.getBase()) && p.getNumeroProcesso().equals(processoAtualizado.getNumeroProcesso())) {
+            // Agora que Processo tem um ID, é mais robusto usar o ID para encontrar o processo a ser atualizado
+            if (p.getId() == processoAtualizado.getId()) { 
                 processos.set(i, processoAtualizado);
                 salvarDados();
                 return true;
@@ -229,7 +269,8 @@ public class ProcessoRepository {
     }
 
     public static boolean removerProcesso(String base, String numeroProcesso) {
-        Processo processoParaRemover = buscarProcessoPorBaseNumero(base, numeroProcesso);
+        // O ideal seria remover por ID, mas manter a remoção por base/numero por enquanto.
+        Processo processoParaRemover = buscarProcessoPorBaseNumero(base, numeroProcesso); // Ou buscarProcessoPorId(id)
         if (processoParaRemover != null) {
             if (processoParaRemover.getCaminhoDocumento() != null) {
                 try {
@@ -245,6 +286,29 @@ public class ProcessoRepository {
         }
         return false;
     }
+    
+    // Opcional: Adicionar um método para remover processo por ID
+    public static boolean removerProcesso(long id) {
+        Processo processoParaRemover = buscarProcessoPorId(id);
+        if (processoParaRemover != null) {
+            if (processoParaRemover.getCaminhoDocumento() != null) {
+                try {
+                    Files.deleteIfExists(Paths.get(processoParaRemover.getCaminhoDocumento()));
+                } catch (IOException e) {
+                    System.err.println("Erro ao deletar arquivo do processo: " + e.getMessage());
+                }
+            }
+            // Importante: garantir que a remoção de recibos associados ainda funcione corretamente.
+            // A comparação ideal seria por ID do processo associado, se Recibo tivesse um getter para o ID do processo.
+            // Por enquanto, manter a comparação por objeto completo de processo associado.
+            recibos.removeIf(recibo -> recibo.getProcessoAssociado() != null && recibo.getProcessoAssociado().getId() == id); // Alterado para usar ID do processo associado
+            processos.remove(processoParaRemover);
+            salvarDados();
+            return true;
+        }
+        return false;
+    }
+
 
     public static void limparRepositorio() {
         processos.clear();

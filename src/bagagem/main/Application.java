@@ -8,7 +8,7 @@ public class Application {
 
     public static void main(String[] args) {
         // Remover ou comentar esta linha para que os dados persistam entre as execuções
-        // ProcessoRepository.limparRepositorio(); 
+         //ProcessoRepository.limparRepositorio(); 
 
         SwingUtilities.invokeLater(() -> {
             MainFrame mainFrame = new MainFrame();

@@ -111,8 +111,9 @@ public class ListagemProcessosPanel extends JPanel {
 
         add(topPanel, BorderLayout.NORTH); // Adiciona o painel superior na parte de cima
 
-        // --- Tabela de Processos (INICIALIZAÇÃO MOVIDA PARA CIMA) ---
-        String[] colunas = {"Base", "Número", "Tipo Processo", "Data Abertura", "Doc. Associado", "Tamanho Doc"};
+        // --- Tabela de Processos ---
+        // ADICIONE "ID" AQUI:
+        String[] colunas = {"ID", "Base", "Número", "Tipo Processo", "Data Abertura", "Doc. Associado", "Tamanho Doc"};
         tableModel = new DefaultTableModel(colunas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -121,7 +122,6 @@ public class ListagemProcessosPanel extends JPanel {
         };
         tabelaProcessos = new JTable(tableModel);
         tabelaProcessos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); // Permite selecionar apenas uma linha
-        // Adiciona um listener para duplo clique na tabela para abrir edição (opcional)
         tabelaProcessos.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -132,7 +132,6 @@ public class ListagemProcessosPanel extends JPanel {
         });
         add(new JScrollPane(tabelaProcessos), BorderLayout.CENTER); // Adiciona a tabela com barra de rolagem
 
-        // Carrega os processos na tabela ao inicializar o painel
         carregarProcessosNaTabela();
     }
 
@@ -144,8 +143,6 @@ public class ListagemProcessosPanel extends JPanel {
         List<Processo> processos = ProcessoRepository.listarTodosProcessos(); // Pega os processos do repositório
 
         if (processos.isEmpty()) {
-            // Não exibe JOptionPane aqui para evitar spam na inicialização, apenas se a lista for recarregada
-            // JOptionPane.showMessageDialog(this, "Nenhum processo cadastrado.", "Informação", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
@@ -155,8 +152,8 @@ public class ListagemProcessosPanel extends JPanel {
             String docAssociado = p.getCaminhoDocumento() != null ? p.getCaminhoDocumento() : "N/A";
             String tamanhoDoc = p.getTamanhoArquivoDocumento() > 0 ? (p.getTamanhoArquivoDocumento() / 1024) + " KB" : "N/A";
 
-            // Adiciona uma nova linha à tabela
-            tableModel.addRow(new Object[]{p.getBase(), p.getNumeroProcesso(), tipoProcesso, dataAberturaFormatada, docAssociado, tamanhoDoc});
+            // ADICIONE p.getId() AQUI NA PRIMEIRA POSIÇÃO:
+            tableModel.addRow(new Object[]{p.getId(), p.getBase(), p.getNumeroProcesso(), tipoProcesso, dataAberturaFormatada, docAssociado, tamanhoDoc});
         }
     }
 
@@ -177,6 +174,7 @@ public class ListagemProcessosPanel extends JPanel {
         if (processoEncontrado != null) {
             StringBuilder detalhes = new StringBuilder();
             detalhes.append("Detalhes do Processo:\n");
+            detalhes.append("  ID: ").append(processoEncontrado.getId()).append("\n"); // ADICIONADO AQUI
             detalhes.append("Tipo: ").append(processoEncontrado.getClass().getSimpleName()).append("\n");
             detalhes.append("Base: ").append(processoEncontrado.getBase()).append("\n");
             detalhes.append("Número: ").append(processoEncontrado.getNumeroProcesso()).append("\n");
@@ -203,7 +201,7 @@ public class ListagemProcessosPanel extends JPanel {
             if (!recibosAssociados.isEmpty()) {
                 detalhes.append("\nRecibos Associados:\n");
                 for (Recibo r : recibosAssociados) {
-                    detalhes.append(r.toString()).append("\n---\n"); // Usa o toString detalhado do recibo
+                    detalhes.append(r.toString()).append("\n---\n");
                 }
             } else {
                 detalhes.append("\nNenhum recibo associado.");
@@ -218,6 +216,7 @@ public class ListagemProcessosPanel extends JPanel {
     /**
      * Obtém o processo selecionado na tabela e o envia para edição.
      * O MainFrame será instruído a exibir o painel de cadastro/edição com os dados pré-preenchidos.
+     * ATENÇÃO: Se a tabela for reordenada, buscar pelo ID é mais seguro do que por Base/Número.
      */
     private void editarProcessoSelecionado() {
         int selectedRow = tabelaProcessos.getSelectedRow();
@@ -226,14 +225,13 @@ public class ListagemProcessosPanel extends JPanel {
             return;
         }
 
-        String base = (String) tableModel.getValueAt(selectedRow, 0); // Coluna 0 é a Base
-        String numeroProcesso = (String) tableModel.getValueAt(selectedRow, 1); // Coluna 1 é o Número
-
-        Processo processoParaEditar = ProcessoRepository.buscarProcessoPorBaseNumero(base, numeroProcesso);
+        // AGORA É MAIS SEGURO PEGAR PELO ID, QUE É A PRIMEIRA COLUNA (índice 0)
+        long idProcesso = (long) tableModel.getValueAt(selectedRow, 0); 
+        
+        // Você precisaria de um método no ProcessoRepository para buscar por ID:
+        Processo processoParaEditar = ProcessoRepository.buscarProcessoPorId(idProcesso);
 
         if (processoParaEditar != null) {
-            // Chama o MainFrame para exibir o CadastroProcessoPanel no modo de edição
-            // Passa o processoParaEditar para o construtor do painel
             if (parentFrame != null) {
                 parentFrame.showPanel(new CadastroProcessoPanel(processoParaEditar));
             }
@@ -244,6 +242,7 @@ public class ListagemProcessosPanel extends JPanel {
 
     /**
      * Obtém o processo selecionado na tabela e o remove.
+     * ATENÇÃO: Se a tabela for reordenada, buscar pelo ID é mais seguro do que por Base/Número.
      */
     private void excluirProcessoSelecionado() {
         int selectedRow = tabelaProcessos.getSelectedRow();
@@ -252,16 +251,25 @@ public class ListagemProcessosPanel extends JPanel {
             return;
         }
 
-        String base = (String) tableModel.getValueAt(selectedRow, 0); // Coluna 0 é a Base
-        String numeroProcesso = (String) tableModel.getValueAt(selectedRow, 1); // Coluna 1 é o Número
+        // PEGUE O ID DA PRIMEIRA COLUNA:
+        long idProcesso = (long) tableModel.getValueAt(selectedRow, 0); 
+        
+        // Busque o processo pelo ID para pegar Base e Número para a mensagem de confirmação
+        Processo processoParaRemover = ProcessoRepository.buscarProcessoPorId(idProcesso);
+        
+        if (processoParaRemover == null) {
+            JOptionPane.showMessageDialog(this, "Processo selecionado não encontrado no repositório.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         int confirm = JOptionPane.showConfirmDialog(this,
-                "Tem certeza que deseja excluir o processo " + base + "-" + numeroProcesso + "?\n" +
+                "Tem certeza que deseja excluir o processo " + processoParaRemover.getBase() + "-" + processoParaRemover.getNumeroProcesso() + " (ID: " + idProcesso + ")?\n" +
                 "Isso removerá também todos os recibos associados.",
                 "Confirmar Exclusão", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            boolean removido = ProcessoRepository.removerProcesso(base, numeroProcesso);
+            // Chame o método de remoção por ID se for implementado, ou continue por base/numero
+            boolean removido = ProcessoRepository.removerProcesso(processoParaRemover.getBase(), processoParaRemover.getNumeroProcesso()); // ou removerProcesso(idProcesso)
             if (removido) {
                 JOptionPane.showMessageDialog(this, "Processo excluído com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
                 carregarProcessosNaTabela(); // Recarrega a tabela para refletir a exclusão
