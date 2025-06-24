@@ -1,7 +1,6 @@
 package bagagem.gui;
 
 import bagagem.model.*;
-import bagagem.model.exception.ValidacaoException; 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.MaskFormatter;
@@ -12,7 +11,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import javax.imageio.ImageIO; // Importar para carregar imagens
+import java.awt.image.BufferedImage; // Importar para manipular imagens
+import java.io.IOException; // Importar para tratamento de erros de imagem
 
+/**
+ * Painel para cadastro e edição de processos de bagagem, com um formulário
+ * opaco sobre um fundo transparente.
+ */
 public class CadastroProcessoPanel extends JPanel {
 
     private JTextField txtBase;
@@ -23,10 +29,17 @@ public class CadastroProcessoPanel extends JPanel {
     private JTextField txtCampoEspecifico;
     private JTextField txtCaminhoDocumento;
     private JButton btnSalvar;
+
+    // NOVO: JLabel para exibir a miniatura da imagem
+    private JLabel lblMiniaturaDocumento;
+    private JPanel panelAnexo; // Agrupar componentes de anexo para melhor organização
+
     private Processo processoEmEdicao;
+
     private String tempCaminhoDoc;
     private String tempTipoDoc;
     private long tempTamanhoDoc;
+
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
 
     public CadastroProcessoPanel() {
@@ -35,34 +48,41 @@ public class CadastroProcessoPanel extends JPanel {
 
     public CadastroProcessoPanel(Processo processoParaEditar) {
         this.processoEmEdicao = processoParaEditar;
+
         setLayout(new GridBagLayout());
+
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(new Color(255, 255, 255, 235));
         formPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.GRAY, 1),
             BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
+
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
         JLabel titleLabel = new JLabel("Cadastro de Processo", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
         formPanel.add(titleLabel, gbc);
+
         gbc.gridwidth = 1;
         gbc.gridy++;
         formPanel.add(new JLabel("Base (Ex: GYN):"), gbc);
         gbc.gridx = 1;
         txtBase = new JTextField(10);
         formPanel.add(txtBase, gbc);
+
         gbc.gridx = 0;
         gbc.gridy++;
         formPanel.add(new JLabel("Número do Processo:"), gbc);
         gbc.gridx = 1;
         txtNumeroProcesso = new JTextField(15);
         formPanel.add(txtNumeroProcesso, gbc);
+
         gbc.gridx = 0;
         gbc.gridy++;
         formPanel.add(new JLabel("Data de Abertura:"), gbc);
@@ -73,6 +93,7 @@ public class CadastroProcessoPanel extends JPanel {
             txtDataAbertura = new JFormattedTextField();
         }
         formPanel.add(txtDataAbertura, gbc);
+
         gbc.gridx = 0;
         gbc.gridy++;
         formPanel.add(new JLabel("Tipo de Processo:"), gbc);
@@ -80,6 +101,7 @@ public class CadastroProcessoPanel extends JPanel {
         String[] tiposProcesso = {"Danificação de Bagagem", "Extravio de Bagagem", "Item Esquecido em Avião"};
         cmbTipoProcesso = new JComboBox<>(tiposProcesso);
         formPanel.add(cmbTipoProcesso, gbc);
+
         gbc.gridx = 0;
         gbc.gridy++;
         lblCampoEspecifico = new JLabel("Campo Específico:");
@@ -87,26 +109,50 @@ public class CadastroProcessoPanel extends JPanel {
         gbc.gridx = 1;
         txtCampoEspecifico = new JTextField(20);
         formPanel.add(txtCampoEspecifico, gbc);
-        gbc.gridx = 0;
-        gbc.gridy++;
-        formPanel.add(new JLabel("Documento Anexado:"), gbc);
-        gbc.gridx = 1;
+        
+        // NOVO: Painel para o anexo do documento e miniatura
+        panelAnexo = new JPanel(new GridBagLayout());
+        panelAnexo.setOpaque(false); // Manter transparente para ver o fundo do formPanel
+        panelAnexo.setBorder(BorderFactory.createTitledBorder("Anexo do Documento"));
+        GridBagConstraints gbcAnexo = new GridBagConstraints();
+        gbcAnexo.insets = new Insets(2, 2, 2, 2);
+        gbcAnexo.fill = GridBagConstraints.HORIZONTAL;
+
+        gbcAnexo.gridx = 0; gbcAnexo.gridy = 0; gbcAnexo.gridwidth = 2;
         txtCaminhoDocumento = new JTextField(30);
         txtCaminhoDocumento.setEditable(false);
-        formPanel.add(txtCaminhoDocumento, gbc);
+        panelAnexo.add(txtCaminhoDocumento, gbcAnexo);
+        
+        gbcAnexo.gridx = 0; gbcAnexo.gridy = 1; gbcAnexo.gridwidth = 1; gbcAnexo.anchor = GridBagConstraints.WEST;
+        JButton btnAnexarDocumento = new JButton("Anexar Documento...");
+        panelAnexo.add(btnAnexarDocumento, gbcAnexo);
+
+        gbcAnexo.gridx = 1; gbcAnexo.gridy = 1; gbcAnexo.anchor = GridBagConstraints.EAST;
+        // NOVO: Adiciona o JLabel para a miniatura
+        lblMiniaturaDocumento = new JLabel();
+        lblMiniaturaDocumento.setPreferredSize(new Dimension(80, 80)); // Tamanho fixo para a miniatura
+        lblMiniaturaDocumento.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+        lblMiniaturaDocumento.setHorizontalAlignment(SwingConstants.CENTER);
+        lblMiniaturaDocumento.setVerticalAlignment(SwingConstants.CENTER);
+        panelAnexo.add(lblMiniaturaDocumento, gbcAnexo);
+
         gbc.gridx = 0;
         gbc.gridy++;
-        gbc.gridwidth = 2;
+        gbc.gridwidth = 2; // Ocupa duas colunas para o painel de anexo
+        formPanel.add(panelAnexo, gbc);
+
+        // Botão Salvar
+        gbc.gridy++;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
-        JButton btnAnexarDocumento = new JButton("Anexar Documento...");
-        formPanel.add(btnAnexarDocumento, gbc);
-        gbc.gridy++;
         btnSalvar = new JButton("Salvar Processo");
         formPanel.add(btnSalvar, gbc);
+        
+        // Listeners
         cmbTipoProcesso.addActionListener(e -> atualizarCampoEspecifico());
         btnAnexarDocumento.addActionListener(e -> selecionarDocumento());
         btnSalvar.addActionListener(e -> salvarProcesso());
+
         if (processoEmEdicao != null) {
             titleLabel.setText("Edição de Processo");
             btnSalvar.setText("Atualizar Processo");
@@ -114,42 +160,37 @@ public class CadastroProcessoPanel extends JPanel {
             txtBase.setEnabled(false);
             txtNumeroProcesso.setEnabled(false);
             cmbTipoProcesso.setEnabled(false);
+            // NOVO: Carregar a miniatura se já houver um documento anexado
+            if (processoEmEdicao.getCaminhoDocumento() != null && !processoEmEdicao.getCaminhoDocumento().isEmpty()) {
+                exibirMiniatura(processoEmEdicao.getCaminhoDocumento());
+            }
         } else {
             txtDataAbertura.setText(dateFormat.format(new Date()));
             atualizarCampoEspecifico();
         }
-        addPlaceholder(txtBase, "Ex: GYN");
-        addPlaceholder(txtNumeroProcesso, "Ex: 12345");
-        addPlaceholder(txtCaminhoDocumento, "Selecione um documento para anexar");
-
-
-        // A linha do placeholder de data foi removida
+        
         GridBagConstraints gbcMain = new GridBagConstraints();
         gbcMain.gridx = 0;
         gbcMain.gridy = 0;
         gbcMain.insets = new Insets(20, 20, 20, 20);
         add(formPanel, gbcMain);
     }
-
+    
     private void atualizarCampoEspecifico() {
         String tipoSelecionado = (String) cmbTipoProcesso.getSelectedItem();
-        txtCampoEspecifico.setText("");
         switch (tipoSelecionado) {
             case "Danificação de Bagagem":
                 lblCampoEspecifico.setText("Etiqueta da Bagagem Danificada:");
-                addPlaceholder(txtCampoEspecifico, "Ex: BG-12345678");
                 break;
             case "Extravio de Bagagem":
                 lblCampoEspecifico.setText("Etiqueta da Bagagem Extraviada:");
-                addPlaceholder(txtCampoEspecifico, "Ex: BG-12345678");
                 break;
             case "Item Esquecido em Avião":
                 lblCampoEspecifico.setText("Número do Voo:");
-                addPlaceholder(txtCampoEspecifico, "Ex: G3 1234");
                 break;
         }
     }
-
+    
     private void preencherCamposParaEdicao(Processo processo) {
         txtBase.setText(processo.getBase());
         txtNumeroProcesso.setText(processo.getNumeroProcesso());
@@ -174,6 +215,7 @@ public class CadastroProcessoPanel extends JPanel {
             this.tempCaminhoDoc = processo.getCaminhoDocumento();
             this.tempTipoDoc = processo.getTipoArquivoDocumento();
             this.tempTamanhoDoc = processo.getTamanhoArquivoDocumento();
+            exibirMiniatura(processo.getCaminhoDocumento()); // Exibir miniatura ao preencher edição
         }
     }
 
@@ -188,87 +230,125 @@ public class CadastroProcessoPanel extends JPanel {
             int i = fileName.lastIndexOf('.');
             this.tempTipoDoc = (i > 0) ? fileName.substring(i + 1).toUpperCase() : "";
             this.tempTamanhoDoc = selectedFile.length();
+            
+            exibirMiniatura(this.tempCaminhoDoc); // Exibir miniatura imediatamente após selecionar
         }
     }
+
+    // NOVO MÉTODO: Para exibir a miniatura
+    private void exibirMiniatura(String caminhoArquivo) {
+        if (caminhoArquivo == null || caminhoArquivo.isEmpty()) {
+            lblMiniaturaDocumento.setIcon(null);
+            lblMiniaturaDocumento.setText("Nenhum anexo");
+            return;
+        }
+
+        File file = new File(caminhoArquivo);
+        if (!file.exists()) {
+            lblMiniaturaDocumento.setIcon(null);
+            lblMiniaturaDocumento.setText("Arquivo não encontrado");
+            return;
+        }
+
+        String tipoDoc = this.tempTipoDoc != null ? this.tempTipoDoc.toLowerCase() : "";
+        
+        if (tipoDoc.equals("jpg") || tipoDoc.equals("jpeg") || tipoDoc.equals("png")) {
+            try {
+                BufferedImage originalImage = ImageIO.read(file);
+                if (originalImage != null) {
+                    // Redimensionar a imagem mantendo a proporção
+                    int desiredWidth = 70; // Largura desejada para a miniatura
+                    int desiredHeight = 70; // Altura desejada para a miniatura
+                    
+                    Image scaledImage = originalImage.getScaledInstance(desiredWidth, desiredHeight, Image.SCALE_SMOOTH);
+                    lblMiniaturaDocumento.setIcon(new ImageIcon(scaledImage));
+                    lblMiniaturaDocumento.setText(""); // Remove o texto se a imagem for exibida
+                } else {
+                    lblMiniaturaDocumento.setIcon(null);
+                    lblMiniaturaDocumento.setText("Erro ao carregar imagem");
+                }
+            } catch (IOException e) {
+                lblMiniaturaDocumento.setIcon(null);
+                lblMiniaturaDocumento.setText("Erro de leitura");
+                System.err.println("Erro ao carregar miniatura: " + e.getMessage());
+            }
+        } else if (tipoDoc.equals("pdf")) {
+            // Para PDFs, exibir um ícone genérico ou texto
+            lblMiniaturaDocumento.setIcon(UIManager.getIcon("FileView.hardDriveIcon")); // Exemplo de ícone
+            lblMiniaturaDocumento.setText("PDF");
+        } else {
+            lblMiniaturaDocumento.setIcon(null);
+            lblMiniaturaDocumento.setText("Arquivo não suportado");
+        }
+    }
+
 
     private void salvarProcesso() {
+        String base = txtBase.getText().trim().toUpperCase();
+        if (!base.matches("^[A-Z]{3}$")) {
+            JOptionPane.showMessageDialog(this, "A Base deve conter 3 letras maiúsculas.", "Erro", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String numeroProcesso = txtNumeroProcesso.getText().trim();
+        if (!numeroProcesso.matches("^\\d{5}$")) {
+            JOptionPane.showMessageDialog(this, "O Número do Processo deve conter 5 dígitos.", "Erro", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Date dataAbertura;
         try {
-            String base = txtBase.getText().trim().toUpperCase();
-            String numeroProcesso = txtNumeroProcesso.getText().trim();
-            Date dataAbertura;
-            try {
-                dataAbertura = dateFormat.parse(txtDataAbertura.getText());
-            } catch (ParseException e) {
-                throw new ValidacaoException("Formato de data inválido. Use dd/MM/yyyy.");
+            dataAbertura = dateFormat.parse(txtDataAbertura.getText());
+        } catch (ParseException e) {
+            JOptionPane.showMessageDialog(this, "Formato de data inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        String campoEspecifico = txtCampoEspecifico.getText().trim().toUpperCase();
+        if (campoEspecifico.isEmpty()) {
+             JOptionPane.showMessageDialog(this, "O campo específico é obrigatório.", "Erro", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (processoEmEdicao == null) {
+            if (ProcessoRepository.buscarProcessoPorBaseNumero(base, numeroProcesso) != null) {
+                JOptionPane.showMessageDialog(this, "Processo já existe.", "Erro", JOptionPane.ERROR_MESSAGE);
+                return;
             }
-            String campoEspecifico = txtCampoEspecifico.getText().trim().toUpperCase();
-            if (campoEspecifico.isEmpty() || campoEspecifico.startsWith("EX:")) {
-                throw new ValidacaoException("O campo específico é obrigatório.");
+            Processo novoProcesso = criarProcesso(base, numeroProcesso, dataAbertura, campoEspecifico);
+            ProcessoRepository.adicionarProcesso(novoProcesso);
+            JOptionPane.showMessageDialog(this, "Processo cadastrado!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            limparCampos();
+        } else {
+            Map<String, Object> novosDados = new HashMap<>();
+            novosDados.put("dataAbertura", dataAbertura);
+            novosDados.put("caminhoDocumento", tempCaminhoDoc);
+            novosDados.put("tipoArquivoDocumento", tempTipoDoc);
+            novosDados.put("tamanhoArquivoDocumento", tempTamanhoDoc);
+            
+            if (processoEmEdicao instanceof DanificacaoBagagem) {
+                ((DanificacaoBagagem) processoEmEdicao).setEtiquetaBagagemDanificada(campoEspecifico);
+            } else if (processoEmEdicao instanceof ExtravioBagagem) {
+                ((ExtravioBagagem) processoEmEdicao).setEtiquetaBagagemExtraviada(campoEspecifico);
+            } else if (processoEmEdicao instanceof ItemEsquecidoAviao) {
+                ((ItemEsquecidoAviao) processoEmEdicao).setNumeroVoo(campoEspecifico);
             }
-            String tipoSelecionado = (String) cmbTipoProcesso.getSelectedItem();
-            switch (tipoSelecionado) {
-                case "Danificação de Bagagem":
-                case "Extravio de Bagagem":
-                    if (!campoEspecifico.matches("^[A-Z]{2}-\\d{8}$")) {
-                        throw new ValidacaoException("Formato de etiqueta inválido. Use 2 letras, hífen e 8 números (Ex: BG-12345678).");
-                    }
-                    break;
-                case "Item Esquecido em Avião":
-                    if (!campoEspecifico.matches("^[A-Z0-9]{2}\\s\\d{4}$")) {
-                        throw new ValidacaoException("Formato de voo inválido. Use 2 caracteres, espaço e 4 números (Ex: G3 1234).");
-                    }
-                    break;
-            }
-            if (processoEmEdicao == null) {
-                if (tempCaminhoDoc == null || tempCaminhoDoc.trim().isEmpty()) {
-                    throw new ValidacaoException("É obrigatório anexar um documento para criar um novo processo.");
-                }
-                if (ProcessoRepository.buscarProcessoPorBaseNumero(base, numeroProcesso) != null) {
-                    throw new ValidacaoException("Processo com esta Base e Número já existe.");
-                }
-                Processo novoProcesso = criarProcesso(base, numeroProcesso, dataAbertura, campoEspecifico);
-                ProcessoRepository.adicionarProcesso(novoProcesso);
-                JOptionPane.showMessageDialog(this, "Processo cadastrado!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                limparCampos();
+
+            processoEmEdicao.editarInformacoes(novosDados);
+
+            boolean atualizado = ProcessoRepository.atualizarProcesso(processoEmEdicao);
+            if (atualizado) {
+                JOptionPane.showMessageDialog(this, "Processo atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
             } else {
-                Map<String, Object> novosDados = new HashMap<>();
-                novosDados.put("dataAbertura", dataAbertura);
-                novosDados.put("caminhoDocumento", tempCaminhoDoc);
-                novosDados.put("tipoArquivoDocumento", tempTipoDoc);
-                novosDados.put("tamanhoArquivoDocumento", tempTamanhoDoc);
-                if (processoEmEdicao instanceof DanificacaoBagagem) {
-                    ((DanificacaoBagagem) processoEmEdicao).setEtiquetaBagagemDanificada(campoEspecifico);
-                } else if (processoEmEdicao instanceof ExtravioBagagem) {
-                    ((ExtravioBagagem) processoEmEdicao).setEtiquetaBagagemExtraviada(campoEspecifico);
-                } else if (processoEmEdicao instanceof ItemEsquecidoAviao) {
-                    ((ItemEsquecidoAviao) processoEmEdicao).setNumeroVoo(campoEspecifico);
-                }
-                processoEmEdicao.editarInformacoes(novosDados);
-                boolean atualizado = ProcessoRepository.atualizarProcesso(processoEmEdicao);
-                if (atualizado) {
-                    JOptionPane.showMessageDialog(this, "Processo atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                } else {
-                    JOptionPane.showMessageDialog(this, "Falha ao atualizar processo.", "Erro", JOptionPane.ERROR_MESSAGE);
-                }
+                JOptionPane.showMessageDialog(this, "Falha ao atualizar processo.", "Erro", JOptionPane.ERROR_MESSAGE);
             }
-        } catch (ValidacaoException e) {
-            JOptionPane.showMessageDialog(this, e.getMessage(), "Erro de Validação", JOptionPane.WARNING_MESSAGE);
         }
     }
-
+    
     private Processo criarProcesso(String base, String numeroProcesso, Date data, String campo) {
         String tipo = (String) cmbTipoProcesso.getSelectedItem();
         Processo p = null;
         switch (tipo) {
-            case "Danificação de Bagagem":
-                p = new DanificacaoBagagem(base, numeroProcesso, data, campo);
-                break;
-            case "Extravio de Bagagem":
-                p = new ExtravioBagagem(base, numeroProcesso, data, campo);
-                break;
-            case "Item Esquecido em Avião":
-                p = new ItemEsquecidoAviao(base, numeroProcesso, data, campo);
-                break;
+            case "Danificação de Bagagem": p = new DanificacaoBagagem(base, numeroProcesso, data, campo); break;
+            case "Extravio de Bagagem": p = new ExtravioBagagem(base, numeroProcesso, data, campo); break;
+            case "Item Esquecido em Avião": p = new ItemEsquecidoAviao(base, numeroProcesso, data, campo); break;
         }
         if (p != null) {
             p.setCaminhoDocumento(this.tempCaminhoDoc);
@@ -287,46 +367,7 @@ public class CadastroProcessoPanel extends JPanel {
         tempCaminhoDoc = null;
         tempTipoDoc = null;
         tempTamanhoDoc = 0;
-        
-        // Garante que os placeholders voltem após limpar
-        addPlaceholder(txtBase, "Ex: GYN");
-        addPlaceholder(txtNumeroProcesso, "Ex: 12345");
-        atualizarCampoEspecifico();
-    }
-
-    private void addPlaceholder(JTextField textField, String placeholder) {
-        // Remove listeners antigos para evitar duplicação
-        for(java.awt.event.FocusListener listener : textField.getFocusListeners()) {
-            textField.removeFocusListener(listener);
-        }
-        
-        Color gainColor = Color.BLACK; // Cor do texto normal
-        Color lostColor = Color.GRAY;  // Cor do placeholder
-
-        if (textField.getText().isEmpty()) {
-            textField.setText(placeholder);
-            textField.setForeground(lostColor);
-        } else {
-            // Garante que se houver texto, a cor seja a correta
-            textField.setForeground(gainColor);
-        }
-
-        textField.addFocusListener(new java.awt.event.FocusAdapter() {
-            @Override
-            public void focusGained(java.awt.event.FocusEvent e) {
-                if (textField.getForeground() == lostColor && textField.getText().equals(placeholder)) {
-                    textField.setText("");
-                    textField.setForeground(gainColor);
-                }
-            }
-
-            @Override
-            public void focusLost(java.awt.event.FocusEvent e) {
-                if (textField.getText().isEmpty()) {
-                    textField.setText(placeholder);
-                    textField.setForeground(lostColor);
-                }
-            }
-        });
+        lblMiniaturaDocumento.setIcon(null); // Limpa a miniatura
+        lblMiniaturaDocumento.setText("Nenhum anexo"); // Restaura o texto padrão
     }
 }
