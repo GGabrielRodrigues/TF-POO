@@ -47,7 +47,7 @@ public class MainFrame extends JFrame {
         reciboMenu.add(listarRecibosItem);
         menuBar.add(reciboMenu);
         
-        associarReciboItem.addActionListener(e -> showPanel(new AssociarReciboPanel()));
+        associarReciboItem.addActionListener(e -> showPanel(new AssociarReciboPanel(null)));
         listarRecibosItem.addActionListener(e -> showPanel(new ListagemRecibosPanel(this)));
         // Menu "Ajuda"
         JMenu ajudaMenu = new JMenu("Ajuda");

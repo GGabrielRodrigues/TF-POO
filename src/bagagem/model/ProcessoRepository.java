@@ -9,12 +9,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors; // Importar para usar Streams API
 
 public class ProcessoRepository {
 
     private static final String PROCESSOS_FILE = "processos.dat";
     private static final String RECIBOS_FILE = "recibos.dat";
-    private static final String COUNTERS_FILE = "counters.dat"; // NOVO ARQUIVO para os contadores estáticos
+    private static final String COUNTERS_FILE = "counters.dat";
     private static final String ROOT_FOLDER_NAME = "BagagemSystemDocs";
 
     private static List<Processo> processos = new ArrayList<>();
@@ -56,6 +57,7 @@ public class ProcessoRepository {
         } catch (IOException e) {
             System.err.println("Erro ao salvar recibos: " + e.getMessage());
         }
+
         try (DataOutputStream dos = new DataOutputStream(new FileOutputStream(COUNTERS_FILE))) {
             dos.writeLong(Processo.getNextIdProcesso());
             dos.writeLong(Recibo.getNextIdRecibo());
@@ -82,8 +84,7 @@ public class ProcessoRepository {
                 recibos = new ArrayList<>();
             }
         }
-        
-        // NOVO: Carregar os contadores estáticos
+
         File countersFile = new File(COUNTERS_FILE);
         if (countersFile.exists() && countersFile.length() > 0) {
             try (DataInputStream dis = new DataInputStream(new FileInputStream(COUNTERS_FILE))) {
@@ -91,8 +92,6 @@ public class ProcessoRepository {
                 Recibo.setNextIdRecibo(dis.readLong());
             } catch (IOException e) {
                 System.err.println("Erro ao carregar contadores de ID: " + e.getMessage());
-                // Se der erro, os contadores permanecerão em 0, e IDs podem ser duplicados em nova execução.
-                // Isso pode ser uma falha grave, então é bom alertar.
             }
         }
     }
@@ -207,26 +206,6 @@ public class ProcessoRepository {
     public static List<Processo> listarTodosProcessos() {
         return Collections.unmodifiableList(processos);
     }
-
-    public static List<Processo> listarProcessosFiltrados(String baseFiltro, String tipoFiltro) {
-    List<Processo> processosFiltrados = new ArrayList<>();
-
-    // Define se os filtros devem ser aplicados
-    boolean aplicarFiltroBase = baseFiltro != null && !baseFiltro.trim().isEmpty();
-    boolean aplicarFiltroTipo = tipoFiltro != null && !tipoFiltro.trim().isEmpty() && !tipoFiltro.equals("Todos");
-
-    // Percorre todos os processos existentes
-    for (Processo p : processos) {
-        boolean baseCorresponde = !aplicarFiltroBase || p.getBase().equalsIgnoreCase(baseFiltro);
-        boolean tipoCorresponde = !aplicarFiltroTipo || p.getClass().getSimpleName().equals(tipoFiltro);
-
-        // Se o processo atende a todos os filtros ativos, adiciona à lista de resultado
-        if (baseCorresponde && tipoCorresponde) {
-            processosFiltrados.add(p);
-        }
-    }
-    return processosFiltrados;
-}
     
     public static List<Recibo> listarTodosRecibos() {
         return Collections.unmodifiableList(recibos);
@@ -241,11 +220,6 @@ public class ProcessoRepository {
         return null;
     }
 
-    /**
-     * NOVO MÉTODO: Busca um processo pelo seu ID único.
-     * @param id O ID do processo a ser buscado.
-     * @return O objeto Processo correspondente ao ID, ou null se não encontrado.
-     */
     public static Processo buscarProcessoPorId(long id) {
         for (Processo p : processos) {
             if (p.getId() == id) {
@@ -254,7 +228,49 @@ public class ProcessoRepository {
         }
         return null;
     }
-    
+
+    // NOVO MÉTODO: Buscar recibo específico por ID
+    public static Recibo buscarReciboPorId(long id) {
+        for (Recibo r : recibos) {
+            if (r.getId() == id) {
+                return r;
+            }
+        }
+        return null;
+    }
+
+    // NOVO MÉTODO: Buscar recibo específico por base e número do PROCESSO ASSOCIADO
+    public static Recibo buscarReciboPorBaseNumeroProcessoAssociado(String baseProcesso, String numeroProcesso) {
+        for (Recibo r : recibos) {
+            if (r.getProcessoAssociado() != null &&
+                r.getProcessoAssociado().getBase().equalsIgnoreCase(baseProcesso) &&
+                r.getProcessoAssociado().getNumeroProcesso().equals(numeroProcesso)) {
+                return r;
+            }
+        }
+        return null;
+    }
+
+    // NOVO MÉTODO: Filtrar recibos por base e/ou tipo e/ou número do processo associado
+    public static List<Recibo> filtrarRecibos(String baseProcesso, String tipoRecibo, String numeroProcesso) {
+        List<Recibo> resultados = new ArrayList<>();
+        for (Recibo r : recibos) {
+            boolean matchBase = baseProcesso == null || baseProcesso.trim().isEmpty() || r.getBase().equalsIgnoreCase(baseProcesso.trim());
+            
+            // Compara o nome da classe do recibo (ex: "ReciboConsertoBagagem") com o tipo fornecido
+            // O tipo fornecido pode vir do ComboBox da GUI (ex: "Recibo de Conserto de Bagagem")
+            boolean matchTipo = tipoRecibo == null || tipoRecibo.trim().isEmpty() || 
+                                r.getClass().getSimpleName().equalsIgnoreCase(tipoRecibo.replace("Recibo de ", "").replace(" ", ""));
+            
+            boolean matchNumeroProcesso = numeroProcesso == null || numeroProcesso.trim().isEmpty() || r.getNumeroProcesso().equals(numeroProcesso.trim());
+
+            if (matchBase && matchTipo && matchNumeroProcesso) {
+                resultados.add(r);
+            }
+        }
+        return Collections.unmodifiableList(resultados);
+    }
+
     public static List<Recibo> listarRecibosPorProcesso(Processo processo) {
         List<Recibo> recibosDoProcesso = new ArrayList<>();
         if (processo != null) {
@@ -269,16 +285,10 @@ public class ProcessoRepository {
         return recibosDoProcesso;
     }
 
-      public static boolean atualizarProcesso(Processo processoAtualizado) {
-        // ... (código existente) ...
-        // Se você decidiu que Base e NumeroProcesso não podem ser alterados, 
-        // a busca para atualização ainda pode ser por eles.
-        // Ou, para consistência com o ID, você poderia buscar pelo ID do processoAtualizado.
-        // Exemplo:
+    public static boolean atualizarProcesso(Processo processoAtualizado) {
         if (processoAtualizado == null) return false;
         for (int i = 0; i < processos.size(); i++) {
             Processo p = processos.get(i);
-            // Agora que Processo tem um ID, é mais robusto usar o ID para encontrar o processo a ser atualizado
             if (p.getId() == processoAtualizado.getId()) { 
                 processos.set(i, processoAtualizado);
                 salvarDados();
@@ -287,26 +297,23 @@ public class ProcessoRepository {
         }
         return false;
     }
-
+    
+    // NOVO MÉTODO: Atualizar Recibo
     public static boolean atualizarRecibo(Recibo reciboAtualizado) {
-    if (reciboAtualizado == null) {
+        if (reciboAtualizado == null) return false;
+        for (int i = 0; i < recibos.size(); i++) {
+            Recibo r = recibos.get(i);
+            if (r.getId() == reciboAtualizado.getId()) { // Usar o ID do recibo para atualização
+                recibos.set(i, reciboAtualizado);
+                salvarDados();
+                return true;
+            }
+        }
         return false;
     }
-    for (int i = 0; i < recibos.size(); i++) {
-        Recibo r = recibos.get(i);
-        // Encontra o recibo na lista pelo seu ID único
-        if (r.getId() == reciboAtualizado.getId()) {
-            recibos.set(i, reciboAtualizado); // Substitui o objeto antigo pelo novo
-            salvarDados(); // Persiste a lista atualizada no arquivo
-            return true;
-        }
-    }
-    return false; // Retorna false se o recibo não foi encontrado
-}
 
     public static boolean removerProcesso(String base, String numeroProcesso) {
-        // O ideal seria remover por ID, mas manter a remoção por base/numero por enquanto.
-        Processo processoParaRemover = buscarProcessoPorBaseNumero(base, numeroProcesso); // Ou buscarProcessoPorId(id)
+        Processo processoParaRemover = buscarProcessoPorBaseNumero(base, numeroProcesso);
         if (processoParaRemover != null) {
             if (processoParaRemover.getCaminhoDocumento() != null) {
                 try {
@@ -315,15 +322,15 @@ public class ProcessoRepository {
                     System.err.println("Erro ao deletar arquivo do processo: " + e.getMessage());
                 }
             }
-            recibos.removeIf(recibo -> recibo.getProcessoAssociado().equals(processoParaRemover));
+            recibos.removeIf(recibo -> recibo.getProcessoAssociado() != null &&
+                                       recibo.getProcessoAssociado().getId() == processoParaRemover.getId());
             processos.remove(processoParaRemover);
             salvarDados();
             return true;
         }
         return false;
     }
-    
-    // Opcional: Adicionar um método para remover processo por ID
+
     public static boolean removerProcesso(long id) {
         Processo processoParaRemover = buscarProcessoPorId(id);
         if (processoParaRemover != null) {
@@ -334,10 +341,7 @@ public class ProcessoRepository {
                     System.err.println("Erro ao deletar arquivo do processo: " + e.getMessage());
                 }
             }
-            // Importante: garantir que a remoção de recibos associados ainda funcione corretamente.
-            // A comparação ideal seria por ID do processo associado, se Recibo tivesse um getter para o ID do processo.
-            // Por enquanto, manter a comparação por objeto completo de processo associado.
-            recibos.removeIf(recibo -> recibo.getProcessoAssociado() != null && recibo.getProcessoAssociado().getId() == id); // Alterado para usar ID do processo associado
+            recibos.removeIf(recibo -> recibo.getProcessoAssociado() != null && recibo.getProcessoAssociado().getId() == id);
             processos.remove(processoParaRemover);
             salvarDados();
             return true;
@@ -351,6 +355,11 @@ public class ProcessoRepository {
         recibos.clear();
         new File(PROCESSOS_FILE).delete();
         new File(RECIBOS_FILE).delete();
+        new File(COUNTERS_FILE).delete();
+        
+        Processo.setNextIdProcesso(0);
+        Recibo.setNextIdRecibo(0);
+
         try {
             Path root = getRootDocsPath();
             if (Files.exists(root)) {
@@ -363,4 +372,33 @@ public class ProcessoRepository {
             System.err.println("Erro ao limpar pasta de documentos: " + e.getMessage());
         }
     }
+    
+    public static List<Processo> listarProcessosFiltrados(String base, String tipoProcesso) {
+        List<Processo> resultados = new ArrayList<>();
+        
+        // Se a base e o tipo forem vazios/nulos ou "Todos", retorna todos os processos
+        if ((base == null || base.trim().isEmpty()) && (tipoProcesso == null || tipoProcesso.trim().isEmpty() || tipoProcesso.equals("Todos"))) {
+            return Collections.unmodifiableList(processos); // Retorna todos sem filtro
+        }
+
+        for (Processo p : processos) {
+            boolean matchBase = true;
+            if (base != null && !base.trim().isEmpty()) {
+                matchBase = p.getBase().equalsIgnoreCase(base.trim());
+            }
+
+            boolean matchTipo = true;
+            if (tipoProcesso != null && !tipoProcesso.trim().isEmpty() && !tipoProcesso.equals("Todos")) {
+                // Compara o nome simples da classe do processo (ex: "DanificacaoBagagem")
+                matchTipo = p.getClass().getSimpleName().equalsIgnoreCase(tipoProcesso.trim());
+            }
+
+            if (matchBase && matchTipo) {
+                resultados.add(p);
+            }
+        }
+        return Collections.unmodifiableList(resultados);
+    }
+    
 }
+
