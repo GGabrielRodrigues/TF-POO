@@ -114,29 +114,46 @@ public class AssociarReciboPanel extends JPanel {
         gbcRecibo.gridx = 1; gbcRecibo.gridwidth = 2;
         panelCriacaoRecibo.add(txtCampoEspecificoRecibo, gbcRecibo);
 
-        // --- Seção de Anexo de Documento do Recibo com Miniatura ---
-        gbcRecibo.gridx = 0; gbcRecibo.gridy++; gbcRecibo.gridwidth = 1;
-        panelCriacaoRecibo.add(new JLabel("Anexo do Recibo:"), gbcRecibo);
-        
-        gbcRecibo.gridx = 1; gbcRecibo.gridwidth = 1; // Coluna para o campo de texto
-        txtCaminhoDocumentoRecibo = new JTextField(20);
-        txtCaminhoDocumentoRecibo.setEditable(false);
-        panelCriacaoRecibo.add(txtCaminhoDocumentoRecibo, gbcRecibo);
-        
-        gbcRecibo.gridx = 2; gbcRecibo.gridwidth = 1; // Coluna para a miniatura
-        lblMiniaturaDocumentoRecibo = new JLabel(); // NOVO JLabel
+        JPanel panelAnexoRecibo = new JPanel(new GridBagLayout());
+        panelAnexoRecibo.setOpaque(false);
+        panelAnexoRecibo.setBorder(BorderFactory.createTitledBorder("Anexo do Recibo"));
+        GridBagConstraints gbcAnexo = new GridBagConstraints();
+        gbcAnexo.insets = new Insets(2, 5, 2, 5);
+        gbcAnexo.fill = GridBagConstraints.HORIZONTAL;
+
+        // Miniatura
+        gbcAnexo.gridx = 0;
+        gbcAnexo.gridy = 0;
+        gbcAnexo.gridheight = 2;
+        gbcAnexo.anchor = GridBagConstraints.CENTER;
+        gbcAnexo.fill = GridBagConstraints.NONE;
+        lblMiniaturaDocumentoRecibo = new JLabel();
         lblMiniaturaDocumentoRecibo.setPreferredSize(new Dimension(80, 80));
         lblMiniaturaDocumentoRecibo.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         lblMiniaturaDocumentoRecibo.setHorizontalAlignment(SwingConstants.CENTER);
         lblMiniaturaDocumentoRecibo.setVerticalAlignment(SwingConstants.CENTER);
-        panelCriacaoRecibo.add(lblMiniaturaDocumentoRecibo, gbcRecibo);
+        panelAnexoRecibo.add(lblMiniaturaDocumentoRecibo, gbcAnexo);
 
-        // Botão Anexar Documento ABAIXO do campo de texto e miniatura (ajuste de layout)
-        gbcRecibo.gridx = 1; gbcRecibo.gridy++; gbcRecibo.gridwidth = 2; 
-        gbcRecibo.anchor = GridBagConstraints.CENTER;
-        btnAnexarDocumentoRecibo = new JButton("Anexar...");
-        panelCriacaoRecibo.add(btnAnexarDocumentoRecibo, gbcRecibo);
-        // --- Fim da Seção de Anexo ---
+        // Campo de texto
+        gbcAnexo.gridx = 1;
+        gbcAnexo.gridy = 0;
+        gbcAnexo.gridheight = 1;
+        gbcAnexo.weightx = 1.0;
+        gbcAnexo.fill = GridBagConstraints.HORIZONTAL;
+        txtCaminhoDocumentoRecibo = new JTextField(25);
+        txtCaminhoDocumentoRecibo.setEditable(false);
+        panelAnexoRecibo.add(txtCaminhoDocumentoRecibo, gbcAnexo);
+
+        // Botão
+        gbcAnexo.gridx = 1;
+        gbcAnexo.gridy = 1;
+        gbcAnexo.weightx = 0;
+        gbcAnexo.anchor = GridBagConstraints.WEST;
+        JButton btnAnexarDocumentoRecibo = new JButton("Anexar...");
+        panelAnexoRecibo.add(btnAnexarDocumentoRecibo, gbcAnexo);
+        
+        gbcRecibo.gridx = 0; gbcRecibo.gridy++; gbcRecibo.gridwidth = 3;
+        panelCriacaoRecibo.add(panelAnexoRecibo, gbcRecibo);
         
         gbcRecibo.gridx = 0; gbcRecibo.gridy++; gbcRecibo.gridwidth = 3; gbcRecibo.anchor = GridBagConstraints.CENTER;
         btnSalvarRecibo = new JButton("Salvar Recibo");

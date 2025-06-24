@@ -110,31 +110,43 @@ public class CadastroProcessoPanel extends JPanel {
         txtCampoEspecifico = new JTextField(20);
         formPanel.add(txtCampoEspecifico, gbc);
         
-        // NOVO: Painel para o anexo do documento e miniatura
         panelAnexo = new JPanel(new GridBagLayout());
-        panelAnexo.setOpaque(false); // Manter transparente para ver o fundo do formPanel
+        panelAnexo.setOpaque(false);
         panelAnexo.setBorder(BorderFactory.createTitledBorder("Anexo do Documento"));
         GridBagConstraints gbcAnexo = new GridBagConstraints();
-        gbcAnexo.insets = new Insets(2, 2, 2, 2);
+        gbcAnexo.insets = new Insets(2, 5, 2, 5);
         gbcAnexo.fill = GridBagConstraints.HORIZONTAL;
 
-        gbcAnexo.gridx = 0; gbcAnexo.gridy = 0; gbcAnexo.gridwidth = 2;
-        txtCaminhoDocumento = new JTextField(30);
-        txtCaminhoDocumento.setEditable(false);
-        panelAnexo.add(txtCaminhoDocumento, gbcAnexo);
-        
-        gbcAnexo.gridx = 0; gbcAnexo.gridy = 1; gbcAnexo.gridwidth = 1; gbcAnexo.anchor = GridBagConstraints.WEST;
-        JButton btnAnexarDocumento = new JButton("Anexar Documento...");
-        panelAnexo.add(btnAnexarDocumento, gbcAnexo);
-
-        gbcAnexo.gridx = 1; gbcAnexo.gridy = 1; gbcAnexo.anchor = GridBagConstraints.EAST;
-        // NOVO: Adiciona o JLabel para a miniatura
+        // Miniatura (à esquerda, ocupando duas linhas de altura)
+        gbcAnexo.gridx = 0;
+        gbcAnexo.gridy = 0;
+        gbcAnexo.gridheight = 2; // Ocupa a altura de 2 componentes
+        gbcAnexo.anchor = GridBagConstraints.CENTER;
+        gbcAnexo.fill = GridBagConstraints.NONE;
         lblMiniaturaDocumento = new JLabel();
-        lblMiniaturaDocumento.setPreferredSize(new Dimension(80, 80)); // Tamanho fixo para a miniatura
+        lblMiniaturaDocumento.setPreferredSize(new Dimension(80, 80));
         lblMiniaturaDocumento.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         lblMiniaturaDocumento.setHorizontalAlignment(SwingConstants.CENTER);
         lblMiniaturaDocumento.setVerticalAlignment(SwingConstants.CENTER);
         panelAnexo.add(lblMiniaturaDocumento, gbcAnexo);
+
+        // Campo de texto do caminho (à direita da miniatura, na primeira linha)
+        gbcAnexo.gridx = 1;
+        gbcAnexo.gridy = 0;
+        gbcAnexo.gridheight = 1; // Reseta a altura para 1
+        gbcAnexo.weightx = 1.0; // Permite que o campo de texto expanda horizontalmente
+        gbcAnexo.fill = GridBagConstraints.HORIZONTAL;
+        txtCaminhoDocumento = new JTextField(25);
+        txtCaminhoDocumento.setEditable(false);
+        panelAnexo.add(txtCaminhoDocumento, gbcAnexo);
+
+        // Botão de anexar (à direita da miniatura, na segunda linha)
+        gbcAnexo.gridx = 1;
+        gbcAnexo.gridy = 1;
+        gbcAnexo.weightx = 0; // Não precisa expandir
+        gbcAnexo.anchor = GridBagConstraints.WEST; // Alinha o botão à esquerda da sua célula
+        JButton btnAnexarDocumento = new JButton("Anexar Documento...");
+        panelAnexo.add(btnAnexarDocumento, gbcAnexo);
 
         gbc.gridx = 0;
         gbc.gridy++;
