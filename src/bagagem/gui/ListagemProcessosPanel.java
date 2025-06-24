@@ -7,6 +7,10 @@ import java.awt.*;
 import java.text.SimpleDateFormat;
 import java.util.List;
 
+/**
+ * Painel da interface gráfica para listar, consultar, filtrar e gerenciar os processos existentes.
+ * Exibe os processos em uma tabela e oferece botões para visualizar detalhes, editar e excluir.
+ */
 public class ListagemProcessosPanel extends JPanel {
 
     private JTable tabelaProcessos;
@@ -16,6 +20,10 @@ public class ListagemProcessosPanel extends JPanel {
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
     private MainFrame parentFrame;
 
+    /**
+     * Construtor do painel de listagem de processos.
+     * @param parentFrame A referência do MainFrame, usada para navegação entre painéis.
+     */
     public ListagemProcessosPanel(MainFrame parentFrame) {
         this.parentFrame = parentFrame;
         setOpaque(true);
@@ -82,6 +90,12 @@ public class ListagemProcessosPanel extends JPanel {
         carregarProcessosNaTabela(ProcessoRepository.listarTodosProcessos());
     }
 
+    /**
+     * Cria e configura a JTable para exibir os processos.
+     * Define o modelo da tabela, as colunas e adiciona um ouvinte de mouse para
+     * detectar cliques duplos nas linhas.
+     * @return A instância da JTable configurada.
+     */
     private JTable createTabela() {
         String[] colunas = {"ID", "Base", "Número", "Tipo Processo", "Data Abertura", "Doc. Associado", "Tamanho Doc"};
         tableModel = new DefaultTableModel(colunas, 0) {
@@ -103,6 +117,10 @@ public class ListagemProcessosPanel extends JPanel {
         return tabelaProcessos;
     }
     
+    /**
+     * Obtém o processo selecionado na tabela e navega para a tela de edição (CadastroProcessoPanel).
+     * Se nenhum processo estiver selecionado, exibe uma mensagem de aviso.
+     */
     private void editarProcessoSelecionado() { 
         int selectedRow = tabelaProcessos.getSelectedRow();
         if (selectedRow == -1) {
@@ -122,6 +140,10 @@ public class ListagemProcessosPanel extends JPanel {
         }
     }
     
+    /**
+     * Limpa a tabela e a preenche com uma lista de processos fornecida.
+     * @param processos A lista de processos a ser exibida na tabela.
+     */
     private void carregarProcessosNaTabela(List<Processo> processos) {
         tableModel.setRowCount(0);
         if (processos == null || processos.isEmpty()) {
@@ -136,6 +158,10 @@ public class ListagemProcessosPanel extends JPanel {
         }
     }
 
+    /**
+     * Aplica os filtros de base e tipo selecionados pelo usuário,
+     * busca os processos correspondentes no repositório e atualiza a tabela.
+     */
     private void aplicarFiltros() {
         String base = txtFiltroBase.getText().trim();
         String tipo = (String) cmbFiltroTipo.getSelectedItem();
@@ -144,6 +170,10 @@ public class ListagemProcessosPanel extends JPanel {
         carregarProcessosNaTabela(processosFiltrados);
     }
 
+    /**
+     * Exibe os detalhes completos do processo selecionado em uma janela de diálogo (JOptionPane).
+     * Inclui uma miniatura da imagem do documento, se houver.
+     */
     private void visualizarProcessoSelecionado() { 
         int selectedRow = tabelaProcessos.getSelectedRow();
         if (selectedRow == -1) {
@@ -194,6 +224,10 @@ public class ListagemProcessosPanel extends JPanel {
         );
     }
 
+    /**
+     * Exclui o processo selecionado na tabela, após uma confirmação do usuário.
+     * A remoção também exclui quaisquer recibos associados.
+     */
     private void excluirProcessoSelecionado() {
         int selectedRow = tabelaProcessos.getSelectedRow();
         if (selectedRow == -1) {
@@ -224,6 +258,11 @@ public class ListagemProcessosPanel extends JPanel {
             }
         }
     }
+    
+    /**
+     * Permite ao usuário buscar um processo específico por Base e Número através de janelas de diálogo.
+     * Se encontrado, o processo é selecionado e destacado na tabela.
+     */
     private void buscarProcessoEspecifico() {
         String base = JOptionPane.showInputDialog(this, "Digite a Base do processo (Ex: GYN):", "Buscar Processo Específico", JOptionPane.QUESTION_MESSAGE);
         if (base == null || base.trim().isEmpty()) {

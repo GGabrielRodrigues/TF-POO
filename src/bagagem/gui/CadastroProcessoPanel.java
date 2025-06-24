@@ -16,6 +16,11 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
+/**
+ * Painel da interface gráfica para cadastrar um novo processo ou editar um existente.
+ * O painel contém campos para os dados do processo, seleção de tipo, anexo de documento
+ * e validações de entrada.
+ */
 public class CadastroProcessoPanel extends JPanel {
     private JTextField txtBase;
     private JTextField txtNumeroProcesso;
@@ -38,19 +43,22 @@ public class CadastroProcessoPanel extends JPanel {
 
     /**
      * Construtor para criar um novo processo.
-     * @param parent A referência do MainFrame.
+     * Chama o construtor principal com um processo nulo.
+     * @param parent A referência do MainFrame, usada para navegação.
      */
     public CadastroProcessoPanel(MainFrame parent) {
-        this(parent, null); // Chama o construtor principal com processo nulo
+        this(parent, null); 
     }
 
     /**
-     * Construtor principal para criar ou editar um processo.
+     * Construtor principal que pode ser usado para criar ou editar um processo.
+     * Se processoParaEditar for nulo, o painel entra em modo de criação.
+     * Se um processo for fornecido, o painel entra em modo de edição e preenche os campos.
      * @param parent A referência do MainFrame.
      * @param processoParaEditar O processo a ser editado, ou null para um novo.
      */
     public CadastroProcessoPanel(MainFrame parent, Processo processoParaEditar) {
-        this.parentFrame = parent; // Armazena a referência
+        this.parentFrame = parent; 
         this.processoEmEdicao = processoParaEditar;
 
         setLayout(new GridBagLayout());
@@ -186,7 +194,12 @@ public class CadastroProcessoPanel extends JPanel {
         add(formPanel, gbcMain);
     }
     
-     private void salvarProcesso() {
+    /**
+     * Valida os dados dos campos do formulário, cria ou atualiza um processo e o salva no repositório.
+     * Exibe mensagens de sucesso ou de erro para o usuário.
+     * Lança ValidacaoException para erros de entrada de dados.
+     */
+    private void salvarProcesso() {
         try {
             String base = txtBase.getText().trim().toUpperCase();
             if (!base.matches("^[A-Z]{3}$")) {
@@ -263,6 +276,10 @@ public class CadastroProcessoPanel extends JPanel {
         }
     }
     
+    /**
+     * Atualiza o rótulo do campo específico (e.g., "Etiqueta da Bagagem")
+     * de acordo com o tipo de processo selecionado no JComboBox.
+     */
     private void atualizarCampoEspecifico() {
         String tipoSelecionado = (String) cmbTipoProcesso.getSelectedItem();
         switch (tipoSelecionado) {
@@ -278,6 +295,11 @@ public class CadastroProcessoPanel extends JPanel {
         }
     }
     
+    /**
+     * Preenche os campos do formulário com os dados de um processo existente.
+     * Este método é chamado quando o painel está em modo de edição.
+     * @param processo O processo cujos dados serão exibidos no formulário.
+     */
     private void preencherCamposParaEdicao(Processo processo) {
         txtBase.setText(processo.getBase());
         txtNumeroProcesso.setText(processo.getNumeroProcesso());
@@ -306,6 +328,10 @@ public class CadastroProcessoPanel extends JPanel {
         }
     }
 
+    /**
+     * Abre uma janela JFileChooser para o usuário selecionar um documento (imagem ou PDF).
+     * Armazena os metadados do arquivo selecionado em variáveis temporárias.
+     */
     private void selecionarDocumento() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setFileFilter(new FileNameExtensionFilter("Imagens e PDFs", "jpg", "jpeg", "png", "pdf"));
@@ -322,6 +348,11 @@ public class CadastroProcessoPanel extends JPanel {
         }
     }
 
+    /**
+     * Exibe uma miniatura do documento no JLabel correspondente.
+     * Mostra uma imagem redimensionada para arquivos de imagem e um ícone para PDFs.
+     * @param caminhoArquivo O caminho absoluto para o arquivo do documento.
+     */
     private void exibirMiniatura(String caminhoArquivo) {
         if (caminhoArquivo == null || caminhoArquivo.isEmpty()) {
             lblMiniaturaDocumento.setIcon(null);
@@ -368,6 +399,14 @@ public class CadastroProcessoPanel extends JPanel {
         }
     }
     
+    /**
+     * Instancia o tipo correto de Processo (DanificacaoBagagem, etc.) com base na seleção do usuário.
+     * @param base A base do aeroporto para o processo.
+     * @param numeroProcesso O número identificador do processo.
+     * @param data A data de abertura do processo.
+     * @param campo O dado específico do tipo de processo (ex: etiqueta, número do voo).
+     * @return Uma nova instância da subclasse apropriada de Processo, ou null se o tipo for inválido.
+     */
     private Processo criarProcesso(String base, String numeroProcesso, Date data, String campo) {
         String tipo = (String) cmbTipoProcesso.getSelectedItem();
         Processo p = null;
@@ -384,6 +423,9 @@ public class CadastroProcessoPanel extends JPanel {
         return p;
     }
 
+    /**
+     * Limpa todos os campos do formulário, redefinindo-os para o estado inicial de um novo cadastro.
+     */
     private void limparCampos() {
         txtBase.setText("");
         txtNumeroProcesso.setText("");
