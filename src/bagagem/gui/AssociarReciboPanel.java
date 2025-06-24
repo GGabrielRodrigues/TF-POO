@@ -15,7 +15,11 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
-
+/**
+ * Painel da interface gráfica para associar um novo recibo a um processo existente
+ * ou para editar os dados de um recibo já cadastrado.
+ * O painel permite buscar um processo, preencher os detalhes do recibo e anexar um documento.
+ */
 public class AssociarReciboPanel extends JPanel {
     private JPanel panelBusca;
     private JTextField txtBuscaBase;
@@ -41,8 +45,8 @@ public class AssociarReciboPanel extends JPanel {
 
     /**
      * Construtor principal para associar (criar) ou editar um recibo.
-     * @param parent O MainFrame da aplicação.
-     * @param reciboParaEditar O recibo a ser editado, ou null se for para criar um novo.
+     * @param parent O MainFrame da aplicação, usado para navegação.
+     * @param reciboParaEditar O recibo a ser editado. Se for nulo, o painel entra em modo de criação de um novo recibo.
      */
     public AssociarReciboPanel(MainFrame parent, Recibo reciboParaEditar) {
         this.parentFrame = parent;
@@ -182,6 +186,11 @@ public class AssociarReciboPanel extends JPanel {
         }
     }
     
+    /**
+     * Habilita ou desabilita o painel de criação/edição de recibo.
+     * Também limpa os campos quando desabilitado, se não estiver em modo de edição.
+     * @param habilitar true para habilitar os campos, false para desabilitar.
+     */
     private void habilitarCamposRecibo(boolean habilitar) {
         panelCriacaoRecibo.setVisible(habilitar);
         if(!habilitar && reciboEmEdicao == null) {
@@ -199,6 +208,11 @@ public class AssociarReciboPanel extends JPanel {
         }
     }
 
+    /**
+     * Busca um processo no repositório com base na base e número fornecidos.
+     * Se encontrado e sem recibo associado, exibe os detalhes e habilita o formulário de criação de recibo.
+     * Caso contrário, exibe mensagens de erro ou aviso apropriadas.
+     */
     private void buscarProcessoParaAssociacao() {
         String base = txtBuscaBase.getText().trim().toUpperCase();
         String numero = txtBuscaNumeroProcesso.getText().trim();
@@ -231,6 +245,11 @@ public class AssociarReciboPanel extends JPanel {
         txtDataAssinatura.setText(dateFormat.format(new Date()));
     }
 
+    /**
+     * Popula o JComboBox de tipos de recibo com as opções válidas
+     * com base no tipo do processo alvo (processoAlvo).
+     * Se estiver em modo de edição, seleciona o tipo do recibo que está sendo editado.
+     */
     private void popularTiposRecibo() {
         cmbTipoRecibo.removeAllItems();
         if (processoAlvo instanceof DanificacaoBagagem) {
@@ -253,6 +272,10 @@ public class AssociarReciboPanel extends JPanel {
         }
     }
     
+    /**
+     * Atualiza o rótulo (label) do campo de texto específico do recibo
+     * com base no tipo de recibo selecionado no JComboBox.
+     */
     private void atualizarCampoEspecificoRecibo() {
         String tipoRecibo = (String) cmbTipoRecibo.getSelectedItem();
         if (tipoRecibo == null) return;
@@ -267,6 +290,11 @@ public class AssociarReciboPanel extends JPanel {
         }
     }
 
+    /**
+     * Abre um JFileChooser para que o usuário selecione um arquivo (imagem ou PDF)
+     * para ser anexado ao recibo. As informações do arquivo selecionado são armazenadas
+     * em variáveis temporárias.
+     */
     private void selecionarDocumentoRecibo() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setFileFilter(new FileNameExtensionFilter("Imagens e PDFs", "jpg", "jpeg", "png", "pdf"));
@@ -283,6 +311,12 @@ public class AssociarReciboPanel extends JPanel {
         }
     }
 
+    /**
+     * Exibe uma miniatura do documento anexado em um JLabel.
+     * Suporta imagens (JPG, PNG) e mostra um ícone genérico para PDFs.
+     * @param caminhoArquivo O caminho do arquivo a ser exibido.
+     * @param targetLabel O JLabel onde a miniatura ou ícone será exibido.
+     */
     private void exibirMiniaturaRecibo(String caminhoArquivo, JLabel targetLabel) {
         if (caminhoArquivo == null || caminhoArquivo.isEmpty()) {
             targetLabel.setIcon(null);
@@ -330,6 +364,11 @@ public class AssociarReciboPanel extends JPanel {
     }
 
 
+    /**
+     * Orquestra o processo de salvar ou atualizar um recibo.
+     * Valida os campos do formulário e chama os métodos apropriados para
+     * criar um novo recibo ou atualizar um existente.
+     */
     private void salvarRecibo() {
         try {
             if(reciboEmEdicao == null && processoAlvo == null) { 
@@ -365,6 +404,15 @@ public class AssociarReciboPanel extends JPanel {
         }
     }
 
+    /**
+     * Cria uma nova instância de uma subclasse de Recibo com base nos dados do formulário
+     * e a adiciona ao repositório.
+     * @param dataAssinatura A data de assinatura do recibo.
+     * @param dadoEspecifico O valor do campo específico do tipo de recibo.
+     * @param tipoReciboSelecionado O nome do tipo de recibo selecionado no JComboBox.
+     * @throws ValidacaoException se ocorrer um erro de validação ou associação.
+     * @throws NumberFormatException se o campo de milhas contiver um valor não numérico.
+     */
     private void criarNovoRecibo(Date dataAssinatura, String dadoEspecifico, String tipoReciboSelecionado) throws ValidacaoException, NumberFormatException {
         if (tempCaminhoDocRecibo == null || tempCaminhoDocRecibo.trim().isEmpty()) {
             throw new ValidacaoException("É obrigatório anexar um documento para criar um novo recibo.");
@@ -403,6 +451,13 @@ public class AssociarReciboPanel extends JPanel {
         } 
     }
 
+    /**
+     * Atualiza os dados de um recibo existente com as informações do formulário
+     * e salva as alterações no repositório.
+     * @param dataAssinatura A nova data de assinatura do recibo.
+     * @param dadoEspecifico O novo valor para o campo específico do recibo.
+     * @throws NumberFormatException se o campo de milhas contiver um valor não numérico.
+     */
     private void atualizarReciboExistente(Date dataAssinatura, String dadoEspecifico) throws NumberFormatException {
         reciboEmEdicao.setDataAssinatura(dataAssinatura);
 
@@ -437,6 +492,10 @@ public class AssociarReciboPanel extends JPanel {
         }
     }
 
+    /**
+     * Preenche os campos do formulário com os dados do recibo que está sendo editado.
+     * Este método é chamado quando o painel é iniciado em modo de edição.
+     */
     private void preencherCamposParaEdicao() {
         if (reciboEmEdicao == null) return;
         
@@ -477,6 +536,10 @@ public class AssociarReciboPanel extends JPanel {
         }
     }
     
+    /**
+     * Limpa e reconfigura todos os campos do formulário para o estado inicial,
+     * voltando para o modo de criação de um novo recibo.
+     */
     private void limparFormulario() {
         txtBuscaBase.setText("");
         txtBuscaNumeroProcesso.setText("");

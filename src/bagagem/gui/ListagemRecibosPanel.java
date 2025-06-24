@@ -18,6 +18,10 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.List;
 
+/**
+ * Painel da interface gráfica para listar, consultar, filtrar e gerenciar os recibos existentes.
+ * Exibe os recibos em uma tabela e oferece botões para visualizar detalhes, editar e excluir.
+ */
 public class ListagemRecibosPanel extends JPanel {
 
     private JTable tabelaRecibos;
@@ -29,6 +33,10 @@ public class ListagemRecibosPanel extends JPanel {
     private JTextField txtBuscaNumeroProcesso;
     private JComboBox<String> cmbTipoReciboFiltro;
 
+    /**
+     * Construtor do painel de listagem de recibos.
+     * @param parentFrame A referência do MainFrame, usada para navegação entre painéis.
+     */
     public ListagemRecibosPanel(MainFrame parentFrame) {
         this.parentFrame = parentFrame;
         setLayout(new BorderLayout(10, 10));
@@ -134,6 +142,9 @@ public class ListagemRecibosPanel extends JPanel {
     }
 
 
+    /**
+     * Popula o JComboBox de filtro com os tipos de recibo disponíveis no sistema.
+     */
     private void popularTiposReciboFiltro() {
         cmbTipoReciboFiltro.addItem("ReciboConsertoBagagem");
         cmbTipoReciboFiltro.addItem("ReciboIndenizacaoMilhas");
@@ -141,12 +152,19 @@ public class ListagemRecibosPanel extends JPanel {
         cmbTipoReciboFiltro.addItem("ReciboItemEsquecidoAviao");
     }
 
+    /**
+     * Carrega todos os recibos do repositório e os exibe na tabela.
+     */
     private void carregarRecibosNaTabela() {
         tableModel.setRowCount(0);
         List<Recibo> recibos = ProcessoRepository.listarTodosRecibos();
         preencherTabelaComRecibos(recibos);
     }
 
+    /**
+     * Filtra os recibos com base nos critérios inseridos nos campos de busca/filtro
+     * e atualiza a tabela com os resultados.
+     */
     private void buscarFiltrarRecibos() {
         String base = txtBuscaBase.getText().trim();
         String numeroProcesso = txtBuscaNumeroProcesso.getText().trim();
@@ -166,6 +184,10 @@ public class ListagemRecibosPanel extends JPanel {
         preencherTabelaComRecibos(recibosFiltrados);
     }
 
+    /**
+     * Preenche a tabela com uma lista de recibos.
+     * @param recibos A lista de objetos Recibo a ser exibida.
+     */
     private void preencherTabelaComRecibos(List<Recibo> recibos) {
         for (Recibo r : recibos) {
             tableModel.addRow(new Object[]{
@@ -179,6 +201,10 @@ public class ListagemRecibosPanel extends JPanel {
         }
     }
 
+    /**
+     * Exclui o recibo selecionado na tabela, após pedir confirmação ao usuário.
+     * Também remove o arquivo de documento associado do sistema de arquivos.
+     */
     private void excluirReciboSelecionado() {
         int selectedRow = tabelaRecibos.getSelectedRow();
         if (selectedRow == -1) {
@@ -204,6 +230,9 @@ public class ListagemRecibosPanel extends JPanel {
         }
     }
 
+    /**
+     * Abre o painel de edição (`AssociarReciboPanel`) para o recibo selecionado na tabela.
+     */
     private void editarReciboSelecionado() {
         int selectedRow = tabelaRecibos.getSelectedRow();
         if (selectedRow == -1) {
@@ -222,6 +251,10 @@ public class ListagemRecibosPanel extends JPanel {
         }
     }
 
+    /**
+     * Exibe uma janela de diálogo com os detalhes completos do recibo selecionado
+     * e do processo ao qual ele está associado.
+     */
     private void visualizarDetalhesRecibo() {
         int selectedRow = tabelaRecibos.getSelectedRow();
         if (selectedRow == -1) {
@@ -303,6 +336,11 @@ public class ListagemRecibosPanel extends JPanel {
         detalhes.append("</body></html>");
     }
 
+    /**
+     * Exibe uma miniatura de um arquivo de documento em um JLabel.
+     * @param caminhoArquivo O caminho para o arquivo do documento.
+     * @param targetLabel O JLabel onde a miniatura será exibida.
+     */
     private void exibirMiniatura(String caminhoArquivo, JLabel targetLabel) {
         if (caminhoArquivo == null || caminhoArquivo.isEmpty()) {
             targetLabel.setIcon(null);

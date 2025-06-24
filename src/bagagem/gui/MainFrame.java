@@ -4,8 +4,18 @@ import javax.swing.*;
 import java.awt.*;
 import java.net.URL;
 
+/**
+ * A classe MainFrame representa a janela principal da aplicação.
+ * Ela estende JFrame e serve como o contêiner para todos os outros painéis da GUI,
+ * além de abrigar a barra de menus principal para navegação.
+ */
 public class MainFrame extends JFrame {
 
+    /**
+     * Construtor da MainFrame.
+     * Configura o título, tamanho, operação de fechamento e a aparência da janela principal.
+     * Também inicializa a barra de menus da aplicação.
+     */
     public MainFrame() {
         setTitle("Sistema de Gestão de Bagagens da Companhia Aérea");
         setSize(850, 650);
@@ -18,6 +28,12 @@ public class MainFrame extends JFrame {
         createMenuBar();
     }
 
+    /**
+     * Cria e configura a barra de menus (JMenuBar) da aplicação.
+     * Este método constrói os menus "Processo", "Recibo" e "Ajuda",
+     * adiciona os itens de menu a cada um e define as ações (ActionListeners)
+     * para navegação entre os painéis.
+     */
     private void createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
 
@@ -54,6 +70,10 @@ public class MainFrame extends JFrame {
         setJMenuBar(menuBar);
     }
     
+    /**
+     * Exibe uma janela de diálogo (JOptionPane) com informações "Sobre" o sistema,
+     * incluindo detalhes do projeto e dos desenvolvedores.
+     */
     private void mostrarJanelaSobre() {
         String mensagem = "<html>" +
             "<body>" +
@@ -90,6 +110,11 @@ public class MainFrame extends JFrame {
         );
     }
 
+    /**
+     * Método central para navegação. Remove o painel atual do contentor principal
+     * e adiciona o novo painel fornecido.
+     * @param panel O painel (JPanel) a ser exibido na janela principal.
+     */
     void showPanel(JPanel panel) {
         panel.setOpaque(false);
         getContentPane().removeAll();
