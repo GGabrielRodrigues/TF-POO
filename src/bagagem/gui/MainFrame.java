@@ -4,10 +4,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.net.URL;
 
-/**
- * MainFrame é a janela principal da aplicação de gestão de bagagens.
- * Ela contém um menu para navegação e um painel de fundo com imagem.
- */
 public class MainFrame extends JFrame {
 
     public MainFrame() {
@@ -22,9 +18,6 @@ public class MainFrame extends JFrame {
         createMenuBar();
     }
 
-    /**
-     * Cria e configura a barra de menu da janela principal.
-     */
     private void createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
 
@@ -36,7 +29,7 @@ public class MainFrame extends JFrame {
         processoMenu.add(listarProcessosItem);
         menuBar.add(processoMenu);
 
-        cadastrarProcessoItem.addActionListener(e -> showPanel(new CadastroProcessoPanel()));
+        cadastrarProcessoItem.addActionListener(e -> showPanel(new CadastroProcessoPanel(this)));
         listarProcessosItem.addActionListener(e -> showPanel(new ListagemProcessosPanel(this)));
 
         // Menu "Recibo"
@@ -47,31 +40,27 @@ public class MainFrame extends JFrame {
         reciboMenu.add(listarRecibosItem);
         menuBar.add(reciboMenu);
         
-        associarReciboItem.addActionListener(e -> showPanel(new AssociarReciboPanel(null)));
+        associarReciboItem.addActionListener(e -> showPanel(new AssociarReciboPanel(this, null)));
         listarRecibosItem.addActionListener(e -> showPanel(new ListagemRecibosPanel(this)));
+        
         // Menu "Ajuda"
         JMenu ajudaMenu = new JMenu("Ajuda");
         JMenuItem sobreItem = new JMenuItem("Sobre");
         ajudaMenu.add(sobreItem);
         menuBar.add(ajudaMenu);
 
-        // --- AÇÃO PARA O MENU "SOBRE" ADICIONADA AQUI ---
         sobreItem.addActionListener(e -> mostrarJanelaSobre());
 
         setJMenuBar(menuBar);
     }
     
-    /**
-     * Cria e exibe a janela de diálogo "Sobre".
-     */
     private void mostrarJanelaSobre() {
-        // Monta a mensagem usando HTML para formatação (negrito, quebra de linha).
         String mensagem = "<html>" +
             "<body>" +
             "<h2>Sistema de Gestão de Bagagens</h2>" +
             "<p>Este sistema automatiza o registro e organização digital<br>" +
             "dos processos de bagagens de uma companhia aérea.</p>" +
-            "<br>" + // Quebra de linha
+            "<br>" + 
             "<b>Desenvolvido por:</b>" +
             "<ul>" +
             "<li>JÚLIA DE SOUZA NASCCIMENTO/li>" +
@@ -86,27 +75,21 @@ public class MainFrame extends JFrame {
             "</body>" +
             "</html>";
 
-        // Tenta carregar o ícone personalizado
         ImageIcon icone = null;
         URL urlIcone = getClass().getResource("/imagens/logo_sobre.png");
         if (urlIcone != null) {
             icone = new ImageIcon(urlIcone);
         }
 
-        // Exibe a caixa de diálogo
         JOptionPane.showMessageDialog(
-            this,                               // Componente pai (a própria janela)
-            mensagem,                           // A mensagem formatada em HTML
-            "Sobre o Sistema",                  // O título da janela de diálogo
-            JOptionPane.INFORMATION_MESSAGE,    // O tipo de mensagem (afeta o ícone padrão)
-            icone                               // Nosso ícone personalizado (ou null se não for encontrado)
+            this,
+            mensagem,
+            "Sobre o Sistema",
+            JOptionPane.INFORMATION_MESSAGE,
+            icone
         );
     }
 
-    /**
-     * Exibe um painel específico na janela principal.
-     * @param panel O JPanel a ser exibido.
-     */
     void showPanel(JPanel panel) {
         panel.setOpaque(false);
         getContentPane().removeAll();

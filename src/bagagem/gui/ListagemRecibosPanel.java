@@ -3,10 +3,10 @@ package bagagem.gui;
 import bagagem.model.Processo;
 import bagagem.model.ProcessoRepository;
 import bagagem.model.Recibo;
-import bagagem.model.ReciboConsertoBagagem; // Necessário para instanceof
-import bagagem.model.ReciboIndenizacaoMilhas; // Necessário para instanceof
-import bagagem.model.ReciboEntregaBagagemExtraviada; // Necessário para instanceof
-import bagagem.model.ReciboItemEsquecidoAviao; // Necessário para instanceof
+import bagagem.model.ReciboConsertoBagagem;
+import bagagem.model.ReciboIndenizacaoMilhas;
+import bagagem.model.ReciboEntregaBagagemExtraviada;
+import bagagem.model.ReciboItemEsquecidoAviao;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -25,79 +25,89 @@ public class ListagemRecibosPanel extends JPanel {
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
     private MainFrame parentFrame;
 
-    // Campos de busca/filtro
     private JTextField txtBuscaBase;
-    private JTextField txtBuscaNumeroProcesso; // Para buscar pelo número do processo associado
-    private JComboBox<String> cmbTipoReciboFiltro; // Para filtrar por tipo de recibo
+    private JTextField txtBuscaNumeroProcesso;
+    private JComboBox<String> cmbTipoReciboFiltro;
 
     public ListagemRecibosPanel(MainFrame parentFrame) {
         this.parentFrame = parentFrame;
         setLayout(new BorderLayout(10, 10));
 
-        // --- Painel Superior para Título e Filtros/Ações ---
         JPanel topPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
 
         // Título
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 5;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 4; // Ajustado para o número de colunas
+        gbc.anchor = GridBagConstraints.CENTER;
         JLabel titleLabel = new JLabel("Lista e Consulta de Recibos", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
         topPanel.add(titleLabel, gbc);
+        gbc.anchor = GridBagConstraints.WEST; // Reset do anchor
 
-        // Campos de Filtro
         gbc.gridwidth = 1;
-        gbc.gridy++; gbc.gridx = 0;
+        gbc.gridy++;
+        gbc.gridx = 0;
         topPanel.add(new JLabel("Base Processo:"), gbc);
+        
         gbc.gridx = 1;
         txtBuscaBase = new JTextField(8);
         topPanel.add(txtBuscaBase, gbc);
 
         gbc.gridx = 2;
         topPanel.add(new JLabel("Número Processo:"), gbc);
+        
         gbc.gridx = 3;
         txtBuscaNumeroProcesso = new JTextField(10);
         topPanel.add(txtBuscaNumeroProcesso, gbc);
-
-        gbc.gridx = 4;
+        
+        gbc.gridy++;
+        gbc.gridx = 0;
         topPanel.add(new JLabel("Tipo Recibo:"), gbc);
-        gbc.gridx = 5; // Ajustado para não sobrepor o botão de busca/filtro
+        
+        gbc.gridx = 1;
+        gbc.gridwidth = 3;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         cmbTipoReciboFiltro = new JComboBox<>();
-        cmbTipoReciboFiltro.addItem("Todos"); // Opção para não filtrar por tipo
-        popularTiposReciboFiltro(); // Popula o ComboBox com os tipos de recibo conhecidos
+        cmbTipoReciboFiltro.addItem("Todos");
+        popularTiposReciboFiltro();
         topPanel.add(cmbTipoReciboFiltro, gbc);
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.gridwidth = 1;
 
-        // Botões de Ação na Busca/Filtro
-        gbc.gridx = 0; gbc.gridy++; gbc.gridwidth = 1;
+        JPanel filterButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton btnBuscarFiltrar = new JButton("Buscar/Filtrar Recibos");
         btnBuscarFiltrar.addActionListener(e -> buscarFiltrarRecibos());
-        topPanel.add(btnBuscarFiltrar, gbc);
+        filterButtonPanel.add(btnBuscarFiltrar);
 
-        gbc.gridx = 1;
         JButton btnListarTodos = new JButton("Listar Todos");
         btnListarTodos.addActionListener(e -> carregarRecibosNaTabela());
-        topPanel.add(btnListarTodos, gbc);
+        filterButtonPanel.add(btnListarTodos);
 
-        gbc.gridx = 2;
-        JButton btnDetalhes = new JButton("Ver Detalhes"); // NOVO BOTÃO
+        gbc.gridy++;
+        gbc.gridx = 0;
+        gbc.gridwidth = 4;
+        gbc.anchor = GridBagConstraints.CENTER;
+        topPanel.add(filterButtonPanel, gbc);
+
+
+        JPanel acoesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton btnDetalhes = new JButton("Ver Detalhes");
         btnDetalhes.addActionListener(e -> visualizarDetalhesRecibo());
-        topPanel.add(btnDetalhes, gbc);
+        acoesPanel.add(btnDetalhes);
 
-        gbc.gridx = 3;
         JButton btnEditar = new JButton("Editar Recibo");
         btnEditar.addActionListener(e -> editarReciboSelecionado());
-        topPanel.add(btnEditar, gbc);
+        acoesPanel.add(btnEditar);
 
-        gbc.gridx = 4; // Ajustado para a próxima coluna disponível
         JButton btnExcluir = new JButton("Excluir Recibo");
         btnExcluir.addActionListener(e -> excluirReciboSelecionado());
-        topPanel.add(btnExcluir, gbc);
+        acoesPanel.add(btnExcluir);
 
-        add(topPanel, BorderLayout.NORTH);
 
-        // --- Tabela de Recibos ---
-        // Adicionar coluna de ID
         String[] colunas = {"ID Recibo", "Tipo Recibo", "Base Processo", "Nº Processo", "Data Assinatura", "Documento Anexado"};
         tableModel = new DefaultTableModel(colunas, 0) {
             @Override
@@ -116,29 +126,27 @@ public class ListagemRecibosPanel extends JPanel {
             }
         });
         
+        add(topPanel, BorderLayout.NORTH);
         add(new JScrollPane(tabelaRecibos), BorderLayout.CENTER);
+        add(acoesPanel, BorderLayout.SOUTH);
 
         carregarRecibosNaTabela();
     }
 
-    // Método para popular o ComboBox de tipos de recibo
+
     private void popularTiposReciboFiltro() {
         cmbTipoReciboFiltro.addItem("ReciboConsertoBagagem");
         cmbTipoReciboFiltro.addItem("ReciboIndenizacaoMilhas");
         cmbTipoReciboFiltro.addItem("ReciboEntregaBagagemExtraviada");
         cmbTipoReciboFiltro.addItem("ReciboItemEsquecidoAviao");
-        // Isso é para coincidir com Class.getSimpleName(). Pode ser exibido de forma mais amigável
-        // no ComboBox se você quiser, e convertido para o nome simples na lógica de filtro.
     }
 
-    // Carrega todos os recibos (sem filtro)
     private void carregarRecibosNaTabela() {
         tableModel.setRowCount(0);
         List<Recibo> recibos = ProcessoRepository.listarTodosRecibos();
         preencherTabelaComRecibos(recibos);
     }
 
-    // Novo método para buscar/filtrar recibos
     private void buscarFiltrarRecibos() {
         String base = txtBuscaBase.getText().trim();
         String numeroProcesso = txtBuscaNumeroProcesso.getText().trim();
@@ -147,23 +155,22 @@ public class ListagemRecibosPanel extends JPanel {
         
         List<Recibo> recibosFiltrados = ProcessoRepository.filtrarRecibos(
             base.isEmpty() ? null : base,
-            tipoRecibo, // O tipo já está no formato simples aqui
+            tipoRecibo,
             numeroProcesso.isEmpty() ? null : numeroProcesso
         );
         
         if (recibosFiltrados.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Nenhum recibo encontrado com os filtros aplicados.", "Busca/Filtro", JOptionPane.INFORMATION_MESSAGE);
         }
-        tableModel.setRowCount(0); // Limpa a tabela antes de preencher
+        tableModel.setRowCount(0);
         preencherTabelaComRecibos(recibosFiltrados);
     }
 
-    // Método auxiliar para preencher a tabela, usado por carregarRecibosNaTabela e buscarFiltrarRecibos
     private void preencherTabelaComRecibos(List<Recibo> recibos) {
         for (Recibo r : recibos) {
             tableModel.addRow(new Object[]{
-                r.getId(), // ID do Recibo
-                r.getClass().getSimpleName(), // Nome simples da classe
+                r.getId(),
+                r.getClass().getSimpleName(),
                 r.getBase(),
                 r.getNumeroProcesso(),
                 dateFormat.format(r.getDataAssinatura()),
@@ -179,8 +186,8 @@ public class ListagemRecibosPanel extends JPanel {
             return;
         }
 
-        long idRecibo = (long) tableModel.getValueAt(selectedRow, 0); // Pega o ID da primeira coluna
-        Recibo reciboParaRemover = ProcessoRepository.buscarReciboPorId(idRecibo); // Busca pelo ID
+        long idRecibo = (long) tableModel.getValueAt(selectedRow, 0);
+        Recibo reciboParaRemover = ProcessoRepository.buscarReciboPorId(idRecibo);
 
         if (reciboParaRemover == null) {
              JOptionPane.showMessageDialog(this, "Recibo não encontrado no repositório.", "Erro", JOptionPane.ERROR_MESSAGE);
@@ -204,18 +211,17 @@ public class ListagemRecibosPanel extends JPanel {
             return;
         }
 
-        long idRecibo = (long) tableModel.getValueAt(selectedRow, 0); // Pega o ID da primeira coluna
-        Recibo reciboParaEditar = ProcessoRepository.buscarReciboPorId(idRecibo); // Busca pelo ID
+        long idRecibo = (long) tableModel.getValueAt(selectedRow, 0);
+        Recibo reciboParaEditar = ProcessoRepository.buscarReciboPorId(idRecibo);
 
         if (parentFrame != null && reciboParaEditar != null) {
-            AssociarReciboPanel painelEdicao = new AssociarReciboPanel(reciboParaEditar);
+            AssociarReciboPanel painelEdicao = new AssociarReciboPanel(parentFrame, reciboParaEditar);
             parentFrame.showPanel(painelEdicao);
         } else {
             JOptionPane.showMessageDialog(this, "Recibo não encontrado para edição.", "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    // NOVO MÉTODO: Visualizar detalhes do recibo com miniatura e link para o processo
     private void visualizarDetalhesRecibo() {
         int selectedRow = tabelaRecibos.getSelectedRow();
         if (selectedRow == -1) {
@@ -231,14 +237,12 @@ public class ListagemRecibosPanel extends JPanel {
             return;
         }
 
-        // Constrói a mensagem de detalhes
         StringBuilder detalhes = new StringBuilder();
         detalhes.append("<html><body><h2>Detalhes do Recibo</h2>");
         detalhes.append("<p><b>ID Recibo:</b> ").append(recibo.getId()).append("</p>");
         detalhes.append("<p><b>Tipo Recibo:</b> ").append(recibo.getClass().getSimpleName()).append("</p>");
         detalhes.append("<p><b>Data Assinatura:</b> ").append(dateFormat.format(recibo.getDataAssinatura())).append("</p>");
         
-        // Detalhes específicos do recibo
         if (recibo instanceof ReciboConsertoBagagem) {
             detalhes.append("<p><b>Local de Entrega/Retirada:</b> ").append(((ReciboConsertoBagagem) recibo).getEntregaOuRetiradaEmAeroporto()).append("</p>");
         } else if (recibo instanceof ReciboIndenizacaoMilhas) {
@@ -258,38 +262,33 @@ public class ListagemRecibosPanel extends JPanel {
             detalhes.append("<p><b>Tipo:</b> ").append(processoAssociado.getClass().getSimpleName()).append("</p>");
             detalhes.append("<p><b>Data Abertura:</b> ").append(dateFormat.format(processoAssociado.getDataAbertura())).append("</p>");
 
-            // Adiciona um botão para ver detalhes completos do processo
             JButton btnVerProcesso = new JButton("Ver Detalhes do Processo");
             btnVerProcesso.addActionListener(e -> {
-                // Fechar o JOptionPane atual antes de abrir outro painel
                 Window window = SwingUtilities.windowForComponent(btnVerProcesso);
                 if (window instanceof JDialog) {
                     ((JDialog) window).dispose();
                 }
-                // Abre o CadastroProcessoPanel em modo de edição/visualização para o processo associado
-                parentFrame.showPanel(new CadastroProcessoPanel(processoAssociado));
+                parentFrame.showPanel(new CadastroProcessoPanel(parentFrame, processoAssociado));
             });
             
-            // Adicionar componente da miniatura do recibo
             JPanel panelDetalhesReciboVisual = new JPanel(new BorderLayout(5,5));
             panelDetalhesReciboVisual.setOpaque(false);
             
             JLabel lblMiniaturaRecibo = new JLabel();
-            lblMiniaturaRecibo.setPreferredSize(new Dimension(100, 100)); // Tamanho da miniatura
+            lblMiniaturaRecibo.setPreferredSize(new Dimension(100, 100));
             lblMiniaturaRecibo.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
             lblMiniaturaRecibo.setHorizontalAlignment(SwingConstants.CENTER);
             lblMiniaturaRecibo.setVerticalAlignment(SwingConstants.CENTER);
 
-            exibirMiniatura(recibo.getCaminhoDocumento(), lblMiniaturaRecibo); // Usar o método existente
+            exibirMiniatura(recibo.getCaminhoDocumento(), lblMiniaturaRecibo);
 
             JPanel panelTexto = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
             panelTexto.setOpaque(false);
             panelTexto.add(new JLabel(detalhes.toString()));
 
             panelDetalhesReciboVisual.add(panelTexto, BorderLayout.CENTER);
-            panelDetalhesReciboVisual.add(lblMiniaturaRecibo, BorderLayout.EAST); // Miniatura à direita
+            panelDetalhesReciboVisual.add(lblMiniaturaRecibo, BorderLayout.EAST);
             
-            // Adiciona o botão de ver processo
             JPanel panelBotoes = new JPanel(new FlowLayout(FlowLayout.CENTER));
             panelBotoes.setOpaque(false);
             panelBotoes.add(btnVerProcesso);
@@ -304,7 +303,6 @@ public class ListagemRecibosPanel extends JPanel {
         detalhes.append("</body></html>");
     }
 
-    // Método auxiliar para exibir a miniatura (REUTILIZADO do CadastroProcessoPanel ou similar)
     private void exibirMiniatura(String caminhoArquivo, JLabel targetLabel) {
         if (caminhoArquivo == null || caminhoArquivo.isEmpty()) {
             targetLabel.setIcon(null);
@@ -329,7 +327,7 @@ public class ListagemRecibosPanel extends JPanel {
             try {
                 BufferedImage originalImage = ImageIO.read(file);
                 if (originalImage != null) {
-                    int desiredSize = 90; // Tamanho para a miniatura
+                    int desiredSize = 90;
                     Image scaledImage = originalImage.getScaledInstance(desiredSize, desiredSize, Image.SCALE_SMOOTH);
                     targetLabel.setIcon(new ImageIcon(scaledImage));
                     targetLabel.setText("");
