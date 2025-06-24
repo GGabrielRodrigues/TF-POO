@@ -8,44 +8,56 @@ import java.io.Serializable;
  * Classe ItemEsquecidoAviao.
  * Representa o processo em que um objeto foi esquecido dentro da aeronave
  * e precisa ser devolvido ao passageiro.
- * Herda de Processo e adiciona atributos específicos para este tipo de ocorrência.
+ * Herda de {@link bagagem.model.Processo} e adiciona atributos específicos para este tipo de ocorrência.
+ * <p>
+ * Implementa {@link java.io.Serializable} para permitir a persistência de objetos.
  */
-public class ItemEsquecidoAviao extends Processo implements Serializable{
+public class ItemEsquecidoAviao extends Processo implements java.io.Serializable {
 
     // Atributo específico para ItemEsquecidoAviao
     private String numeroVoo; // Código do voo no qual o item foi deixado
 
     /**
      * Construtor da classe ItemEsquecidoAviao.
-     * Chama o construtor da superclasse Processo e inicializa o atributo específico.
+     * Chama o construtor da superclasse {@link bagagem.model.Processo} e inicializa o atributo específico.
      *
      * @param base A sigla do aeroporto onde o processo de item esquecido foi iniciado.
      * @param numeroProcesso O número de identificação do processo de item esquecido.
      * @param dataAbertura A data de abertura do processo.
      * @param numeroVoo O código do voo no qual o item foi deixado.
      */
-    public ItemEsquecidoAviao(String base, String numeroProcesso, Date dataAbertura, String numeroVoo) {
-        super(base, numeroProcesso, dataAbertura); // Chama o construtor da classe pai (Processo)
+    public ItemEsquecidoAviao(String base, String numeroProcesso, java.util.Date dataAbertura, String numeroVoo) {
+        super(base, numeroProcesso, dataAbertura);
         this.numeroVoo = numeroVoo;
     }
 
-    // Método Getter para o atributo específico
+    /**
+     * Retorna o número do voo no qual o item foi esquecido.
+     *
+     * @return O número do voo.
+     */
     public String getNumeroVoo() {
         return numeroVoo;
     }
 
-    // Método Setter para o atributo específico (se for permitida a edição)
+    /**
+     * Define o número do voo no qual o item foi esquecido.
+     *
+     * @param numeroVoo O novo número do voo.
+     */
     public void setNumeroVoo(String numeroVoo) {
         this.numeroVoo = numeroVoo;
     }
 
     /**
-     * Sobrescrita do método editarInformacoes para incluir o atributo específico
-     * do item esquecido em avião, se necessário.
-     * @param novosDados Um Map onde a chave é o nome do atributo e o valor é o novo dado.
+     * Sobrescrita do método {@link bagagem.model.Processo#editarInformacoes(java.util.Map)}
+     * para incluir a edição do atributo específico {@code numeroVoo}.
+     *
+     * @param novosDados Um {@link java.util.Map} onde a chave é o nome do atributo e o valor é o novo dado.
+     * Pode incluir "numeroVoo".
      */
     @Override
-    public void editarInformacoes(Map<String, Object> novosDados) {
+    public void editarInformacoes(java.util.Map<String, Object> novosDados) {
         super.editarInformacoes(novosDados); // Chama o método editarInformacoes da classe pai
 
         if (novosDados.containsKey("numeroVoo")) {
@@ -54,6 +66,4 @@ public class ItemEsquecidoAviao extends Processo implements Serializable{
         }
         System.out.println("Informações de Item Esquecido em Avião editadas.");
     }
-
-    // Você pode adicionar métodos específicos para ItemEsquecidoAviao aqui, se houver.
 }
