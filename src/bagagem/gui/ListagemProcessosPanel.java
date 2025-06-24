@@ -44,7 +44,6 @@ public class ListagemProcessosPanel extends JPanel {
         txtFiltroBase = new JTextField(8);
         topPanel.add(txtFiltroBase, gbc);
 
-        // --- ComboBox de Filtro por Tipo ---
         gbc.gridx = 2;
         topPanel.add(new JLabel("Filtrar por Tipo:"), gbc);
         gbc.gridx = 3;
@@ -52,17 +51,15 @@ public class ListagemProcessosPanel extends JPanel {
         cmbFiltroTipo = new JComboBox<>(tipos);
         topPanel.add(cmbFiltroTipo, gbc);
 
-        // Botão para aplicar os filtros
         gbc.gridx = 4;
         JButton btnFiltrar = new JButton("Filtrar");
         btnFiltrar.addActionListener(e -> aplicarFiltros());
         topPanel.add(btnFiltrar, gbc);
 
 
-        // --- Painel de Ações (Visualizar, Editar, Excluir) ---
         JPanel acoesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
 
-        JButton btnBuscarEspecifico = new JButton("Buscar por ID"); // <-- NOVO BOTÃO
+        JButton btnBuscarEspecifico = new JButton("Buscar por ID");
         btnBuscarEspecifico.addActionListener(e -> buscarProcessoEspecifico());
         acoesPanel.add(btnBuscarEspecifico);
 
@@ -78,7 +75,6 @@ public class ListagemProcessosPanel extends JPanel {
         btnExcluir.addActionListener(e -> excluirProcessoSelecionado());
         acoesPanel.add(btnExcluir);
 
-        // Adicionando painéis ao layout principal
         add(topPanel, BorderLayout.NORTH);
         add(new JScrollPane(createTabela()), BorderLayout.CENTER);
         add(acoesPanel, BorderLayout.SOUTH);
@@ -100,16 +96,34 @@ public class ListagemProcessosPanel extends JPanel {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 if (evt.getClickCount() == 2) {
-                    visualizarProcessoSelecionado(); // Duplo clique também visualiza
+                    visualizarProcessoSelecionado();
                 }
             }
         });
         return tabelaProcessos;
     }
+    
+    private void editarProcessoSelecionado() { 
+        int selectedRow = tabelaProcessos.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Por favor, selecione um processo para editar.", "Nenhuma Seleção", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
+        long idProcesso = (long) tableModel.getValueAt(selectedRow, 0); 
+        Processo processoParaEditar = ProcessoRepository.buscarProcessoPorId(idProcesso);
 
+        if (processoParaEditar != null) {
+            if (parentFrame != null) {
+                parentFrame.showPanel(new CadastroProcessoPanel(parentFrame, processoParaEditar));
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Processo selecionado não encontrado no repositório.", "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
     private void carregarProcessosNaTabela(List<Processo> processos) {
-        tableModel.setRowCount(0); // Limpa a tabela
+        tableModel.setRowCount(0);
         if (processos == null || processos.isEmpty()) {
             return;
         }
@@ -131,143 +145,114 @@ public class ListagemProcessosPanel extends JPanel {
     }
 
     private void visualizarProcessoSelecionado() { 
-         int selectedRow = tabelaProcessos.getSelectedRow();
-    if (selectedRow == -1) {
-        JOptionPane.showMessageDialog(this, "Por favor, selecione um processo para visualizar.", "Nenhuma Seleção", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    long idProcesso = (long) tableModel.getValueAt(selectedRow, 0);
-    Processo processo = ProcessoRepository.buscarProcessoPorId(idProcesso);
-
-    if (processo == null) {
-        JOptionPane.showMessageDialog(this, "Processo não encontrado no repositório.", "Erro", JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    // 1. Construir a parte de texto com HTML para formatação
-    StringBuilder detalhesHtml = new StringBuilder("<html><body>");
-    detalhesHtml.append("<h2>Detalhes do Processo</h2>");
-    detalhesHtml.append("<b>ID:</b> ").append(processo.getId()).append("<br>");
-    detalhesHtml.append("<b>Tipo:</b> ").append(processo.getClass().getSimpleName()).append("<br>");
-    detalhesHtml.append("<b>Base:</b> ").append(processo.getBase()).append("<br>");
-    detalhesHtml.append("<b>Número:</b> ").append(processo.getNumeroProcesso()).append("<br>");
-    detalhesHtml.append("<b>Data Abertura:</b> ").append(dateFormat.format(processo.getDataAbertura())).append("<br><hr>");
-
-    // Adiciona detalhes específicos de cada subclasse
-    if (processo instanceof DanificacaoBagagem) {
-        detalhesHtml.append("<b>Etiqueta Danificada:</b> ").append(((DanificacaoBagagem) processo).getEtiquetaBagagemDanificada()).append("<br>");
-    } else if (processo instanceof ExtravioBagagem) {
-        detalhesHtml.append("<b>Etiqueta Extraviada:</b> ").append(((ExtravioBagagem) processo).getEtiquetaBagagemExtraviada()).append("<br>");
-    } else if (processo instanceof ItemEsquecidoAviao) {
-        detalhesHtml.append("<b>Número do Voo:</b> ").append(((ItemEsquecidoAviao) processo).getNumeroVoo()).append("<br>");
-    }
-
-    detalhesHtml.append("</body></html>");
-
-    // 2. Carregar e redimensionar a imagem
-    ImageIcon iconeFinal = null;
-    String caminhoDocumento = processo.getCaminhoDocumento();
-    if (caminhoDocumento != null && !caminhoDocumento.isEmpty()) {
-        ImageIcon iconeOriginal = new ImageIcon(caminhoDocumento);
-        // Redimensiona a imagem para não criar uma janela gigante
-        Image imagem = iconeOriginal.getImage().getScaledInstance(300, -1, Image.SCALE_SMOOTH); // Largura de 300, altura proporcional
-        iconeFinal = new ImageIcon(imagem);
-    }
-
-    // 3. Exibir o JOptionPane com o texto e a imagem
-    JOptionPane.showMessageDialog(
-        this,
-        detalhesHtml.toString(),
-        "Visualização do Processo",
-        JOptionPane.INFORMATION_MESSAGE,
-        iconeFinal
-    );
-    }
-
-    private void editarProcessoSelecionado() { 
-             int selectedRow = tabelaProcessos.getSelectedRow();
-    if (selectedRow == -1) {
-        JOptionPane.showMessageDialog(this, "Por favor, selecione um processo para editar.", "Nenhuma Seleção", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    long idProcesso = (long) tableModel.getValueAt(selectedRow, 0); 
-
-    Processo processoParaEditar = ProcessoRepository.buscarProcessoPorId(idProcesso);
-
-    if (processoParaEditar != null) {
-        if (parentFrame != null) {
-            parentFrame.showPanel(new CadastroProcessoPanel(processoParaEditar));
+        int selectedRow = tabelaProcessos.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Por favor, selecione um processo para visualizar.", "Nenhuma Seleção", JOptionPane.WARNING_MESSAGE);
+            return;
         }
-    } else {
-        JOptionPane.showMessageDialog(this, "Processo selecionado não encontrado no repositório.", "Erro", JOptionPane.ERROR_MESSAGE);
-    }
+
+        long idProcesso = (long) tableModel.getValueAt(selectedRow, 0);
+        Processo processo = ProcessoRepository.buscarProcessoPorId(idProcesso);
+
+        if (processo == null) {
+            JOptionPane.showMessageDialog(this, "Processo não encontrado no repositório.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        StringBuilder detalhesHtml = new StringBuilder("<html><body>");
+        detalhesHtml.append("<h2>Detalhes do Processo</h2>");
+        detalhesHtml.append("<b>ID:</b> ").append(processo.getId()).append("<br>");
+        detalhesHtml.append("<b>Tipo:</b> ").append(processo.getClass().getSimpleName()).append("<br>");
+        detalhesHtml.append("<b>Base:</b> ").append(processo.getBase()).append("<br>");
+        detalhesHtml.append("<b>Número:</b> ").append(processo.getNumeroProcesso()).append("<br>");
+        detalhesHtml.append("<b>Data Abertura:</b> ").append(dateFormat.format(processo.getDataAbertura())).append("<br><hr>");
+
+        if (processo instanceof DanificacaoBagagem) {
+            detalhesHtml.append("<b>Etiqueta Danificada:</b> ").append(((DanificacaoBagagem) processo).getEtiquetaBagagemDanificada()).append("<br>");
+        } else if (processo instanceof ExtravioBagagem) {
+            detalhesHtml.append("<b>Etiqueta Extraviada:</b> ").append(((ExtravioBagagem) processo).getEtiquetaBagagemExtraviada()).append("<br>");
+        } else if (processo instanceof ItemEsquecidoAviao) {
+            detalhesHtml.append("<b>Número do Voo:</b> ").append(((ItemEsquecidoAviao) processo).getNumeroVoo()).append("<br>");
+        }
+
+        detalhesHtml.append("</body></html>");
+
+        ImageIcon iconeFinal = null;
+        String caminhoDocumento = processo.getCaminhoDocumento();
+        if (caminhoDocumento != null && !caminhoDocumento.isEmpty()) {
+            ImageIcon iconeOriginal = new ImageIcon(caminhoDocumento);
+            Image imagem = iconeOriginal.getImage().getScaledInstance(300, -1, Image.SCALE_SMOOTH);
+            iconeFinal = new ImageIcon(imagem);
+        }
+
+        JOptionPane.showMessageDialog(
+            this,
+            detalhesHtml.toString(),
+            "Visualização do Processo",
+            JOptionPane.INFORMATION_MESSAGE,
+            iconeFinal
+        );
     }
 
     private void excluirProcessoSelecionado() {
-            int selectedRow = tabelaProcessos.getSelectedRow();
-    if (selectedRow == -1) {
-        JOptionPane.showMessageDialog(this, "Por favor, selecione um processo para excluir.", "Nenhuma Seleção", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    long idProcesso = (long) tableModel.getValueAt(selectedRow, 0); 
-
-    Processo processoParaRemover = ProcessoRepository.buscarProcessoPorId(idProcesso);
-
-    if (processoParaRemover == null) {
-        JOptionPane.showMessageDialog(this, "Processo selecionado não encontrado no repositório.", "Erro", JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    int confirm = JOptionPane.showConfirmDialog(this,
-            "Tem certeza que deseja excluir o processo " + processoParaRemover.getBase() + "-" + processoParaRemover.getNumeroProcesso() + " (ID: " + idProcesso + ")?\n" +
-            "Isso removerá também todos os recibos associados.",
-            "Confirmar Exclusão", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-
-    if (confirm == JOptionPane.YES_OPTION) {
-        boolean removido = ProcessoRepository.removerProcesso(processoParaRemover.getBase(), processoParaRemover.getNumeroProcesso());
-        if (removido) {
-            JOptionPane.showMessageDialog(this, "Processo excluído com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            aplicarFiltros(); 
-        } else {
-            JOptionPane.showMessageDialog(this, "Falha ao excluir processo.", "Erro", JOptionPane.ERROR_MESSAGE);
+        int selectedRow = tabelaProcessos.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Por favor, selecione um processo para excluir.", "Nenhuma Seleção", JOptionPane.WARNING_MESSAGE);
+            return;
         }
-    }
-    }
-    private void buscarProcessoEspecifico() {
-    String base = JOptionPane.showInputDialog(this, "Digite a Base do processo (Ex: GYN):", "Buscar Processo Específico", JOptionPane.QUESTION_MESSAGE);
-    if (base == null || base.trim().isEmpty()) {
-        return; 
-    }
 
-    String numero = JOptionPane.showInputDialog(this, "Digite o Número do processo (Ex: 12345):", "Buscar Processo Específico", JOptionPane.QUESTION_MESSAGE);
-    if (numero == null || numero.trim().isEmpty()) {
-        return; 
-    }
+        long idProcesso = (long) tableModel.getValueAt(selectedRow, 0); 
+        Processo processoParaRemover = ProcessoRepository.buscarProcessoPorId(idProcesso);
 
-    Processo processoEncontrado = ProcessoRepository.buscarProcessoPorBaseNumero(base.trim().toUpperCase(), numero.trim()); //
+        if (processoParaRemover == null) {
+            JOptionPane.showMessageDialog(this, "Processo selecionado não encontrado no repositório.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-    if (processoEncontrado == null) {
-        JOptionPane.showMessageDialog(this, "Nenhum processo encontrado para a Base '" + base.toUpperCase() + "' e Número '" + numero + "'.", "Busca Sem Sucesso", JOptionPane.INFORMATION_MESSAGE);
-    } else {
-        long idEncontrado = processoEncontrado.getId(); //
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Tem certeza que deseja excluir o processo " + processoParaRemover.getBase() + "-" + processoParaRemover.getNumeroProcesso() + " (ID: " + idProcesso + ")?\n" +
+                "Isso removerá também todos os recibos associados.",
+                "Confirmar Exclusão", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
-        carregarProcessosNaTabela(ProcessoRepository.listarTodosProcessos());
-        txtFiltroBase.setText(""); 
-        cmbFiltroTipo.setSelectedItem("Todos");
-
-        // Procura a linha correspondente ao ID na tabela
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            if ((long) tableModel.getValueAt(i, 0) == idEncontrado) {
-                tabelaProcessos.setRowSelectionInterval(i, i);
-                tabelaProcessos.scrollRectToVisible(tabelaProcessos.getCellRect(i, 0, true));
-                visualizarProcessoSelecionado();
-                break;
+        if (confirm == JOptionPane.YES_OPTION) {
+            boolean removido = ProcessoRepository.removerProcesso(processoParaRemover.getBase(), processoParaRemover.getNumeroProcesso());
+            if (removido) {
+                JOptionPane.showMessageDialog(this, "Processo excluído com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                aplicarFiltros(); 
+            } else {
+                JOptionPane.showMessageDialog(this, "Falha ao excluir processo.", "Erro", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
-}
+    private void buscarProcessoEspecifico() {
+        String base = JOptionPane.showInputDialog(this, "Digite a Base do processo (Ex: GYN):", "Buscar Processo Específico", JOptionPane.QUESTION_MESSAGE);
+        if (base == null || base.trim().isEmpty()) {
+            return; 
+        }
 
+        String numero = JOptionPane.showInputDialog(this, "Digite o Número do processo (Ex: 12345):", "Buscar Processo Específico", JOptionPane.QUESTION_MESSAGE);
+        if (numero == null || numero.trim().isEmpty()) {
+            return; 
+        }
+
+        Processo processoEncontrado = ProcessoRepository.buscarProcessoPorBaseNumero(base.trim().toUpperCase(), numero.trim());
+
+        if (processoEncontrado == null) {
+            JOptionPane.showMessageDialog(this, "Nenhum processo encontrado para a Base '" + base.toUpperCase() + "' e Número '" + numero + "'.", "Busca Sem Sucesso", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            long idEncontrado = processoEncontrado.getId();
+            carregarProcessosNaTabela(ProcessoRepository.listarTodosProcessos());
+            txtFiltroBase.setText(""); 
+            cmbFiltroTipo.setSelectedItem("Todos");
+
+            for (int i = 0; i < tableModel.getRowCount(); i++) {
+                if ((long) tableModel.getValueAt(i, 0) == idEncontrado) {
+                    tabelaProcessos.setRowSelectionInterval(i, i);
+                    tabelaProcessos.scrollRectToVisible(tabelaProcessos.getCellRect(i, 0, true));
+                    visualizarProcessoSelecionado();
+                    break;
+                }
+            }
+        }
+    }
 }

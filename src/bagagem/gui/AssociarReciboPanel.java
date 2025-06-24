@@ -11,11 +11,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.Map; // Adicionar este import
-import java.util.HashMap; // Adicionar este import
-import javax.imageio.ImageIO; // Adicionar este import
-import java.awt.image.BufferedImage; // Adicionar este import
-import java.io.IOException; // Adicionar este import
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 
 
 public class AssociarReciboPanel extends JPanel {
@@ -31,26 +29,28 @@ public class AssociarReciboPanel extends JPanel {
     private JButton btnSalvarRecibo;
     private JPanel panelCriacaoRecibo;
     private JTextField txtCaminhoDocumentoRecibo;
-    private JButton btnAnexarDocumentoRecibo;
-    
-    private JLabel lblMiniaturaDocumentoRecibo; // Variável para a miniatura
-
+    private JLabel lblMiniaturaDocumentoRecibo;
     private String tempCaminhoDocRecibo;
     private String tempTipoDocRecibo;
     private long tempTamanhoDocRecibo;
-    
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+    
+    private MainFrame parentFrame; 
     private Processo processoAlvo;
     private Recibo reciboEmEdicao;
 
-    // Construtor ÚNICO para Criação (reciboParaEditar == null) ou Edição (reciboParaEditar != null)
-    public AssociarReciboPanel(Recibo reciboParaEditar) {
-        this.reciboEmEdicao = reciboParaEditar; // Define o recibo para edição (pode ser null)
+    /**
+     * Construtor principal para associar (criar) ou editar um recibo.
+     * @param parent O MainFrame da aplicação.
+     * @param reciboParaEditar O recibo a ser editado, ou null se for para criar um novo.
+     */
+    public AssociarReciboPanel(MainFrame parent, Recibo reciboParaEditar) {
+        this.parentFrame = parent;
+        this.reciboEmEdicao = reciboParaEditar;
 
         setLayout(new BorderLayout(10, 10));
         setOpaque(false);
 
-        // --- PAINEL DE BUSCA DE PROCESSO (Visível apenas para CRIAR novo recibo) ---
         panelBusca = new JPanel(new GridBagLayout());
         panelBusca.setBorder(BorderFactory.createTitledBorder("1. Buscar Processo para Associar"));
         GridBagConstraints gbcBusca = new GridBagConstraints();
@@ -75,7 +75,6 @@ public class AssociarReciboPanel extends JPanel {
 
         add(panelBusca, BorderLayout.NORTH);
 
-        // --- PAINEL CENTRAL (Detalhes do Processo + Criação/Edição do Recibo) ---
         JPanel panelCentral = new JPanel(new BorderLayout(10, 10));
         areaDetalhesProcesso = new JTextArea(5, 40);
         areaDetalhesProcesso.setEditable(false);
@@ -83,7 +82,6 @@ public class AssociarReciboPanel extends JPanel {
         areaDetalhesProcesso.setBorder(BorderFactory.createTitledBorder("Detalhes do Processo Encontrado"));
         panelCentral.add(new JScrollPane(areaDetalhesProcesso), BorderLayout.NORTH);
 
-        // --- PAINEL DE CRIAÇÃO/EDIÇÃO DO RECIBO ---
         panelCriacaoRecibo = new JPanel(new GridBagLayout());
         panelCriacaoRecibo.setBorder(BorderFactory.createTitledBorder("2. Criar e Salvar Novo Recibo"));
         GridBagConstraints gbcRecibo = new GridBagConstraints();
@@ -97,7 +95,8 @@ public class AssociarReciboPanel extends JPanel {
         gbcRecibo.gridx = 1; gbcRecibo.gridwidth = 2;
         panelCriacaoRecibo.add(cmbTipoRecibo, gbcRecibo);
 
-        gbcRecibo.gridx = 0; gbcRecibo.gridy++; gbcRecibo.gridwidth = 1;
+        gbcRecibo.gridwidth = 1;
+        gbcRecibo.gridx = 0; gbcRecibo.gridy++;
         panelCriacaoRecibo.add(new JLabel("Data Assinatura (dd/MM/yyyy):"), gbcRecibo);
         try {
             txtDataAssinatura = new JFormattedTextField(new MaskFormatter("##/##/####"));
@@ -107,7 +106,8 @@ public class AssociarReciboPanel extends JPanel {
         gbcRecibo.gridx = 1; gbcRecibo.gridwidth = 2;
         panelCriacaoRecibo.add(txtDataAssinatura, gbcRecibo);
 
-        gbcRecibo.gridx = 0; gbcRecibo.gridy++; gbcRecibo.gridwidth = 1;
+        gbcRecibo.gridwidth = 1;
+        gbcRecibo.gridx = 0; gbcRecibo.gridy++;
         lblCampoEspecificoRecibo = new JLabel("Dado Específico:");
         panelCriacaoRecibo.add(lblCampoEspecificoRecibo, gbcRecibo);
         txtCampoEspecificoRecibo = new JTextField(20);
@@ -121,20 +121,18 @@ public class AssociarReciboPanel extends JPanel {
         gbcAnexo.insets = new Insets(2, 5, 2, 5);
         gbcAnexo.fill = GridBagConstraints.HORIZONTAL;
 
-        // Miniatura
         gbcAnexo.gridx = 0;
         gbcAnexo.gridy = 0;
         gbcAnexo.gridheight = 2;
         gbcAnexo.anchor = GridBagConstraints.CENTER;
         gbcAnexo.fill = GridBagConstraints.NONE;
         lblMiniaturaDocumentoRecibo = new JLabel();
-        lblMiniaturaDocumentoRecibo.setPreferredSize(new Dimension(80, 80));
+        lblMiniaturaDocumentoRecibo.setPreferredSize(new Dimension(90, 90));
         lblMiniaturaDocumentoRecibo.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         lblMiniaturaDocumentoRecibo.setHorizontalAlignment(SwingConstants.CENTER);
         lblMiniaturaDocumentoRecibo.setVerticalAlignment(SwingConstants.CENTER);
         panelAnexoRecibo.add(lblMiniaturaDocumentoRecibo, gbcAnexo);
 
-        // Campo de texto
         gbcAnexo.gridx = 1;
         gbcAnexo.gridy = 0;
         gbcAnexo.gridheight = 1;
@@ -144,7 +142,6 @@ public class AssociarReciboPanel extends JPanel {
         txtCaminhoDocumentoRecibo.setEditable(false);
         panelAnexoRecibo.add(txtCaminhoDocumentoRecibo, gbcAnexo);
 
-        // Botão
         gbcAnexo.gridx = 1;
         gbcAnexo.gridy = 1;
         gbcAnexo.weightx = 0;
@@ -162,58 +159,46 @@ public class AssociarReciboPanel extends JPanel {
         panelCentral.add(panelCriacaoRecibo, BorderLayout.CENTER);
         add(panelCentral, BorderLayout.CENTER);
 
-        // --- LISTENERS ---
-        btnBuscarProcesso.addActionListener(e -> buscarProcessoParaAssociacao()); // RENOMEADO para evitar conflito
+        btnBuscarProcesso.addActionListener(e -> buscarProcessoParaAssociacao());
         btnSalvarRecibo.addActionListener(e -> salvarRecibo());
         cmbTipoRecibo.addActionListener(e -> atualizarCampoEspecificoRecibo());
         btnAnexarDocumentoRecibo.addActionListener(e -> selecionarDocumentoRecibo());
 
-        // --- LÓGICA DE INICIALIZAÇÃO (Criação vs Edição) ---
-        if (reciboEmEdicao != null) {
-            // MODO DE EDIÇÃO:
-            panelBusca.setVisible(false); // Esconde a busca de processo
-            areaDetalhesProcesso.setBorder(BorderFactory.createTitledBorder("Processo Associado (Recibo ID: " + reciboEmEdicao.getId() + ")"));
+        if (this.reciboEmEdicao != null) {
+            panelBusca.setVisible(false);
+            areaDetalhesProcesso.setBorder(BorderFactory.createTitledBorder("Processo Associado (Recibo ID: " + this.reciboEmEdicao.getId() + ")"));
             btnSalvarRecibo.setText("Atualizar Recibo");
-            this.processoAlvo = reciboEmEdicao.getProcessoAssociado(); // Define o processo alvo
+            this.processoAlvo = this.reciboEmEdicao.getProcessoAssociado();
             
-            // Popula e seleciona o tipo correto do recibo em edição
-            popularTiposRecibo(); // Popula o JComboBox com base no processoAlvo (já definido)
+            popularTiposRecibo();
             
-            preencherCamposParaEdicao(); // Preenche os campos do recibo
-            habilitarCamposRecibo(true); // Garante que a seção de recibo esteja visível
+            preencherCamposParaEdicao();
+            habilitarCamposRecibo(true);
             
-            // Desabilita campos que não devem ser alterados na edição do recibo
             cmbTipoRecibo.setEnabled(false); 
 
         } else {
-            // MODO DE CRIAÇÃO (ASSOCIAÇÃO):
-            // Este construtor sem parâmetro será chamado via showPanel(new AssociarReciboPanel())
-            habilitarCamposRecibo(false); // Esconde a seção de recibo inicialmente
+            habilitarCamposRecibo(false);
         }
     }
-
-    // Método para controlar a visibilidade da seção de criação/edição de recibo
-    // E, crucialmente, para limpar o estado quando desabilitado (para novo recibo)
+    
     private void habilitarCamposRecibo(boolean habilitar) {
         panelCriacaoRecibo.setVisible(habilitar);
-        if(!habilitar && reciboEmEdicao == null) { // Apenas limpa se for um NOVO recibo
+        if(!habilitar && reciboEmEdicao == null) {
             areaDetalhesProcesso.setText("");
             processoAlvo = null;
-            // Limpa também os campos da seção de recibo
             txtDataAssinatura.setText("");
             txtCampoEspecificoRecibo.setText("");
             txtCaminhoDocumentoRecibo.setText("");
             lblMiniaturaDocumentoRecibo.setIcon(null);
             lblMiniaturaDocumentoRecibo.setText("Sem Anexo");
-            cmbTipoRecibo.removeAllItems(); // Remove os itens do ComboBox para que sejam populados novamente.
+            cmbTipoRecibo.removeAllItems();
             tempCaminhoDocRecibo = null;
             tempTipoDocRecibo = null;
             tempTamanhoDocRecibo = 0;
         }
     }
 
-    // Lógica de busca de processo para associação de NOVO recibo
-    // RENOMEADO para evitar conflito e ser mais descritivo
     private void buscarProcessoParaAssociacao() {
         String base = txtBuscaBase.getText().trim().toUpperCase();
         String numero = txtBuscaNumeroProcesso.getText().trim();
@@ -227,9 +212,7 @@ public class AssociarReciboPanel extends JPanel {
             habilitarCamposRecibo(false);
             return;
         }
-        // Validação adicional para novo recibo: impede associar se já tiver um.
-        // Essa validação só faz sentido se o sistema permite apenas 1 recibo por processo.
-        // Se puder ter múltiplos recibos, remova este if.
+        
         List<Recibo> recibosExistentes = ProcessoRepository.listarRecibosPorProcesso(processoAlvo);
         if (!recibosExistentes.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Este processo já possui um recibo associado.", "Validação", JOptionPane.WARNING_MESSAGE);
@@ -243,12 +226,11 @@ public class AssociarReciboPanel extends JPanel {
             "  - Base: " + processoAlvo.getBase() + "\n" +
             "  - Número: " + processoAlvo.getNumeroProcesso()
         );
-        popularTiposRecibo(); // Popula o combobox de tipos de recibo
-        habilitarCamposRecibo(true); // Habilita a seção de recibo
-        txtDataAssinatura.setText(dateFormat.format(new Date())); // Preenche data atual
+        popularTiposRecibo();
+        habilitarCamposRecibo(true);
+        txtDataAssinatura.setText(dateFormat.format(new Date()));
     }
 
-    // Popula o JComboBox de tipos de recibo baseados no processo alvo
     private void popularTiposRecibo() {
         cmbTipoRecibo.removeAllItems();
         if (processoAlvo instanceof DanificacaoBagagem) {
@@ -259,7 +241,7 @@ public class AssociarReciboPanel extends JPanel {
         } else if (processoAlvo instanceof ItemEsquecidoAviao) {
             cmbTipoRecibo.addItem("Recibo de Item Esquecido em Avião");
         }
-        // Se for modo de edição, tenta selecionar o item correto no combobox
+        
         if (reciboEmEdicao != null) {
             String tipoSimples = reciboEmEdicao.getClass().getSimpleName();
             switch (tipoSimples) {
@@ -271,7 +253,6 @@ public class AssociarReciboPanel extends JPanel {
         }
     }
     
-    // Atualiza o JLabel do campo específico do recibo
     private void atualizarCampoEspecificoRecibo() {
         String tipoRecibo = (String) cmbTipoRecibo.getSelectedItem();
         if (tipoRecibo == null) return;
@@ -280,15 +261,12 @@ public class AssociarReciboPanel extends JPanel {
             case "Recibo de Item Esquecido em Avião": lblCampoEspecificoRecibo.setText("Doc. Identificação Cliente:"); break;
             default: lblCampoEspecificoRecibo.setText("Local de Entrega/Retirada:"); break;
         }
-        // Só limpa o campo se estiver criando um novo recibo ou mudando o tipo de recibo em um novo.
-        // Se estiver editando, o campo já terá o valor preenchido.
-        // A comparação de tipo aqui pode ser simplificada já que o cmbTipoRecibo.setEnabled(false) em edição.
-        if(reciboEmEdicao == null) { // Apenas limpa em modo de criação
+
+        if(reciboEmEdicao == null) {
             txtCampoEspecificoRecibo.setText("");
         }
     }
 
-    // Lógica para selecionar arquivo de documento para o recibo
     private void selecionarDocumentoRecibo() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setFileFilter(new FileNameExtensionFilter("Imagens e PDFs", "jpg", "jpeg", "png", "pdf"));
@@ -301,12 +279,10 @@ public class AssociarReciboPanel extends JPanel {
             this.tempTipoDocRecibo = (i > 0) ? fileName.substring(i + 1).toUpperCase() : "";
             this.tempTamanhoDocRecibo = selectedFile.length();
 
-            // Exibir miniatura do recibo após selecionar
             exibirMiniaturaRecibo(this.tempCaminhoDocRecibo, lblMiniaturaDocumentoRecibo);
         }
     }
 
-    // Método auxiliar para exibir a miniatura de um recibo
     private void exibirMiniaturaRecibo(String caminhoArquivo, JLabel targetLabel) {
         if (caminhoArquivo == null || caminhoArquivo.isEmpty()) {
             targetLabel.setIcon(null);
@@ -321,18 +297,18 @@ public class AssociarReciboPanel extends JPanel {
             return;
         }
 
+        String fileName = file.getName().toLowerCase();
         String tipoDoc = "";
-        int i = caminhoArquivo.lastIndexOf('.');
+        int i = fileName.lastIndexOf('.');
         if (i > 0) {
-            tipoDoc = caminhoArquivo.substring(i + 1).toLowerCase();
+            tipoDoc = fileName.substring(i + 1);
         }
         
         if (tipoDoc.equals("jpg") || tipoDoc.equals("jpeg") || tipoDoc.equals("png")) {
             try {
                 BufferedImage originalImage = ImageIO.read(file);
                 if (originalImage != null) {
-                    int desiredSize = 70; // Tamanho para a miniatura do recibo
-                    Image scaledImage = originalImage.getScaledInstance(desiredSize, desiredSize, Image.SCALE_SMOOTH);
+                    Image scaledImage = originalImage.getScaledInstance(80, 80, Image.SCALE_SMOOTH);
                     targetLabel.setIcon(new ImageIcon(scaledImage));
                     targetLabel.setText("");
                 } else {
@@ -356,7 +332,6 @@ public class AssociarReciboPanel extends JPanel {
 
     private void salvarRecibo() {
         try {
-            // Validação de processoAlvo apenas para criação, não edição
             if(reciboEmEdicao == null && processoAlvo == null) { 
                  throw new ValidacaoException("Busque um processo para associar o recibo.");
             }
@@ -377,9 +352,9 @@ public class AssociarReciboPanel extends JPanel {
                 throw new ValidacaoException("O campo específico é obrigatório.");
             }
             
-            if (reciboEmEdicao == null) { // Modo de Criação
+            if (reciboEmEdicao == null) {
                 criarNovoRecibo(dataAssinatura, dadoEspecifico, tipoReciboSelecionado);
-            } else { // Modo de Edição
+            } else {
                 atualizarReciboExistente(dataAssinatura, dadoEspecifico);
             }
 
@@ -390,9 +365,7 @@ public class AssociarReciboPanel extends JPanel {
         }
     }
 
-    // Método auxiliar para criar um NOVO recibo
     private void criarNovoRecibo(Date dataAssinatura, String dadoEspecifico, String tipoReciboSelecionado) throws ValidacaoException, NumberFormatException {
-        // Validação de anexo apenas para NOVO recibo
         if (tempCaminhoDocRecibo == null || tempCaminhoDocRecibo.trim().isEmpty()) {
             throw new ValidacaoException("É obrigatório anexar um documento para criar um novo recibo.");
         }
@@ -430,7 +403,6 @@ public class AssociarReciboPanel extends JPanel {
         } 
     }
 
-    // Método auxiliar para ATUALIZAR um recibo existente
     private void atualizarReciboExistente(Date dataAssinatura, String dadoEspecifico) throws NumberFormatException {
         reciboEmEdicao.setDataAssinatura(dataAssinatura);
 
@@ -444,8 +416,6 @@ public class AssociarReciboPanel extends JPanel {
             ((ReciboItemEsquecidoAviao) reciboEmEdicao).setDocumentoIdentificacaoClienteRetirada(dadoEspecifico);
         }
         
-        // Atualiza os metadados do documento SE um novo documento foi anexado DURANTE a edição
-        // Ou se o documento original foi removido (tempCaminhoDocRecibo == null e original não é null)
         if (this.tempCaminhoDocRecibo != null && !this.tempCaminhoDocRecibo.isEmpty() && 
             (reciboEmEdicao.getCaminhoDocumento() == null || !this.tempCaminhoDocRecibo.equals(reciboEmEdicao.getCaminhoDocumento()))) {
             
@@ -453,7 +423,6 @@ public class AssociarReciboPanel extends JPanel {
             reciboEmEdicao.setTipoArquivoDocumento(this.tempTipoDocRecibo);
             reciboEmEdicao.setTamanhoArquivoDocumento(this.tempTamanhoDocRecibo);
         } else if (this.tempCaminhoDocRecibo == null && reciboEmEdicao.getCaminhoDocumento() != null) {
-            // Se o usuário limpou o campo de anexo durante a edição
             reciboEmEdicao.setCaminhoDocumento(null);
             reciboEmEdicao.setTipoArquivoDocumento(null);
             reciboEmEdicao.setTamanhoArquivoDocumento(0);
@@ -462,19 +431,17 @@ public class AssociarReciboPanel extends JPanel {
 
         if (ProcessoRepository.atualizarRecibo(reciboEmEdicao)) {
             JOptionPane.showMessageDialog(this, "Recibo atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            limparFormulario(); // Limpa e prepara para nova operação
+            limparFormulario();
         } else {
             JOptionPane.showMessageDialog(this, "Falha ao atualizar o recibo.", "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    // Preenche os campos do formulário com dados do recibo para EDIÇÃO
     private void preencherCamposParaEdicao() {
         if (reciboEmEdicao == null) return;
         
         txtDataAssinatura.setText(dateFormat.format(reciboEmEdicao.getDataAssinatura()));
         
-        // Configura os dados do documento anexado para a miniatura
         if (reciboEmEdicao.getCaminhoDocumento() != null && !reciboEmEdicao.getCaminhoDocumento().isEmpty()) {
             txtCaminhoDocumentoRecibo.setText(reciboEmEdicao.getCaminhoDocumento());
             this.tempCaminhoDocRecibo = reciboEmEdicao.getCaminhoDocumento();
@@ -484,14 +451,11 @@ public class AssociarReciboPanel extends JPanel {
         } else {
             lblMiniaturaDocumentoRecibo.setIcon(null);
             lblMiniaturaDocumentoRecibo.setText("Sem Anexo");
-            // Certifique-se de que tempCaminhoDocRecibo também seja null neste caso
             this.tempCaminhoDocRecibo = null;
             this.tempTipoDocRecibo = null;
             this.tempTamanhoDocRecibo = 0;
         }
 
-        // Define o texto para o campo específico e seleciona o tipo no ComboBox
-        // O cmbTipoRecibo.setEnabled(false) no construtor garante que isso não seja alterado em edição.
         String tipoReciboClasse = reciboEmEdicao.getClass().getSimpleName();
         switch (tipoReciboClasse) {
             case "ReciboConsertoBagagem":
@@ -513,7 +477,6 @@ public class AssociarReciboPanel extends JPanel {
         }
     }
     
-    // Limpa todos os campos do formulário e redefine o estado para criação
     private void limparFormulario() {
         txtBuscaBase.setText("");
         txtBuscaNumeroProcesso.setText("");
@@ -525,19 +488,18 @@ public class AssociarReciboPanel extends JPanel {
         lblMiniaturaDocumentoRecibo.setText("Sem Anexo");
         txtDataAssinatura.setText(dateFormat.format(new Date()));
         txtCampoEspecificoRecibo.setText("");
-        cmbTipoRecibo.removeAllItems(); // Remove todos os itens (serão populados novamente na busca)
+        cmbTipoRecibo.removeAllItems();
         
-        habilitarCamposRecibo(false); // Esconde a seção de recibo
-        reciboEmEdicao = null; // Resetar recibo em edição
-        processoAlvo = null; // Resetar processo alvo
+        habilitarCamposRecibo(false);
+        reciboEmEdicao = null;
+        processoAlvo = null;
         
-        // Re-habilita campos de busca do processo
         panelBusca.setVisible(true);
         areaDetalhesProcesso.setText("");
-        areaDetalhesProcesso.setBorder(BorderFactory.createTitledBorder("Detalhes do Processo Encontrado")); // Restaura título padrão
+        areaDetalhesProcesso.setBorder(BorderFactory.createTitledBorder("Detalhes do Processo Encontrado"));
         txtBuscaBase.setEnabled(true);
         txtBuscaNumeroProcesso.setEnabled(true);
         btnBuscarProcesso.setEnabled(true);
-        cmbTipoRecibo.setEnabled(true); // Garante que o ComboBox de tipo de recibo esteja habilitado para nova associação
+        cmbTipoRecibo.setEnabled(true);
     }
 }
