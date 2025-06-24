@@ -1,7 +1,7 @@
 package bagagem.gui;
 
 import bagagem.model.*;
-
+import bagagem.model.exception.ValidacaoException;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.MaskFormatter;
@@ -196,39 +196,68 @@ public class AssociarReciboPanel extends JPanel {
     }
 
     private void salvarRecibo() {
-        if(processoAlvo == null) return;
-        Date dataAssinatura;
         try {
-            dataAssinatura = dateFormat.parse(txtDataAssinatura.getText());
-        } catch (ParseException e) {
-            JOptionPane.showMessageDialog(this, "Formato de data inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        String tipoRecibo = (String) cmbTipoRecibo.getSelectedItem();
-        String dadoEspecifico = txtCampoEspecificoRecibo.getText().trim();
-        if (dadoEspecifico.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "O campo específico é obrigatório.", "Erro", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        Recibo novoRecibo = null;
-        try {
-            switch(tipoRecibo) {
-                case "Recibo de Conserto de Bagagem": novoRecibo = new ReciboConsertoBagagem(processoAlvo.getBase(), processoAlvo.getNumeroProcesso(), dataAssinatura, processoAlvo, dadoEspecifico); break;
-                case "Recibo de Indenização em Milhas": novoRecibo = new ReciboIndenizacaoMilhas(processoAlvo.getBase(), processoAlvo.getNumeroProcesso(), dataAssinatura, processoAlvo, Integer.parseInt(dadoEspecifico)); break;
-                case "Recibo de Entrega de Bagagem Extraviada": novoRecibo = new ReciboEntregaBagagemExtraviada(processoAlvo.getBase(), processoAlvo.getNumeroProcesso(), dataAssinatura, processoAlvo, dadoEspecifico); break;
-                case "Recibo de Item Esquecido em Avião": novoRecibo = new ReciboItemEsquecidoAviao(processoAlvo.getBase(), processoAlvo.getNumeroProcesso(), dataAssinatura, processoAlvo, dadoEspecifico); break;
+            if (processoAlvo == null) {
+                // Essa verificação pode ficar aqui, pois é um pré-requisito para tudo.
+                return;
             }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Erro de formato: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        if (novoRecibo != null) {
-            novoRecibo.setCaminhoDocumento(this.tempCaminhoDocRecibo);
-            novoRecibo.setTipoArquivoDocumento(this.tempTipoDocRecibo);
-            novoRecibo.setTamanhoArquivoDocumento(this.tempTamanhoDocRecibo);
-            ProcessoRepository.adicionarRecibo(novoRecibo);
-            JOptionPane.showMessageDialog(this, "Recibo associado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            limparFormulario();
+
+            // --- VALIDAÇÃO DA DATA ---
+            Date dataAssinatura;
+            try {
+                dataAssinatura = dateFormat.parse(txtDataAssinatura.getText());
+            } catch (ParseException e) {
+                throw new ValidacaoException("Formato de data inválido. Use dd/MM/yyyy.");
+            }
+
+            String tipoRecibo = (String) cmbTipoRecibo.getSelectedItem();
+            String dadoEspecifico = txtCampoEspecificoRecibo.getText().trim();
+
+            // --- VALIDAÇÃO DO CAMPO ESPECÍFICO OBRIGATÓRIO ---
+            if (dadoEspecifico.isEmpty()) {
+                throw new ValidacaoException("O campo específico é obrigatório.");
+            }
+
+            Recibo novoRecibo = null;
+
+            // --- VALIDAÇÃO DE FORMATO E CRIAÇÃO DO RECIBO ---
+            // O bloco try/catch interno trata erros de conversão de tipo (Ex: texto em campo de número)
+            try {
+                switch (tipoRecibo) {
+                    case "Recibo de Conserto de Bagagem":
+                        novoRecibo = new ReciboConsertoBagagem(processoAlvo.getBase(), processoAlvo.getNumeroProcesso(), dataAssinatura, processoAlvo, dadoEspecifico);
+                        break;
+                    case "Recibo de Indenização em Milhas":
+                        int milhas = Integer.parseInt(dadoEspecifico); // Pode lançar NumberFormatException
+                        novoRecibo = new ReciboIndenizacaoMilhas(processoAlvo.getBase(), processoAlvo.getNumeroProcesso(), dataAssinatura, processoAlvo, milhas);
+                        break;
+                    case "Recibo de Entrega de Bagagem Extraviada":
+                        novoRecibo = new ReciboEntregaBagagemExtraviada(processoAlvo.getBase(), processoAlvo.getNumeroProcesso(), dataAssinatura, processoAlvo, dadoEspecifico);
+                        break;
+                    case "Recibo de Item Esquecido em Avião":
+                        novoRecibo = new ReciboItemEsquecidoAviao(processoAlvo.getBase(), processoAlvo.getNumeroProcesso(), dataAssinatura, processoAlvo, dadoEspecifico);
+                        break;
+                }
+            } catch (NumberFormatException ex) {
+                // Converte um erro técnico (NumberFormatException) em uma mensagem amigável.
+                throw new ValidacaoException("A quantidade de milhas deve ser um número inteiro válido.");
+            }
+
+            // --- SALVAMENTO E FINALIZAÇÃO ---
+            if (novoRecibo != null) {
+                novoRecibo.setCaminhoDocumento(this.tempCaminhoDocRecibo);
+                novoRecibo.setTipoArquivoDocumento(this.tempTipoDocRecibo);
+                novoRecibo.setTamanhoArquivoDocumento(this.tempTamanhoDocRecibo);
+
+                ProcessoRepository.adicionarRecibo(novoRecibo);
+
+                JOptionPane.showMessageDialog(this, "Recibo associado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                limparFormulario();
+            }
+
+        } catch (ValidacaoException e) {
+            // Ponto central que captura TODOS os erros de validação e os exibe ao usuário.
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Erro de Validação", JOptionPane.ERROR_MESSAGE);
         }
     }
 
