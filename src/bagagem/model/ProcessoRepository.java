@@ -207,6 +207,26 @@ public class ProcessoRepository {
     public static List<Processo> listarTodosProcessos() {
         return Collections.unmodifiableList(processos);
     }
+
+    public static List<Processo> listarProcessosFiltrados(String baseFiltro, String tipoFiltro) {
+    List<Processo> processosFiltrados = new ArrayList<>();
+
+    // Define se os filtros devem ser aplicados
+    boolean aplicarFiltroBase = baseFiltro != null && !baseFiltro.trim().isEmpty();
+    boolean aplicarFiltroTipo = tipoFiltro != null && !tipoFiltro.trim().isEmpty() && !tipoFiltro.equals("Todos");
+
+    // Percorre todos os processos existentes
+    for (Processo p : processos) {
+        boolean baseCorresponde = !aplicarFiltroBase || p.getBase().equalsIgnoreCase(baseFiltro);
+        boolean tipoCorresponde = !aplicarFiltroTipo || p.getClass().getSimpleName().equals(tipoFiltro);
+
+        // Se o processo atende a todos os filtros ativos, adiciona à lista de resultado
+        if (baseCorresponde && tipoCorresponde) {
+            processosFiltrados.add(p);
+        }
+    }
+    return processosFiltrados;
+}
     
     public static List<Recibo> listarTodosRecibos() {
         return Collections.unmodifiableList(recibos);
@@ -267,6 +287,22 @@ public class ProcessoRepository {
         }
         return false;
     }
+
+    public static boolean atualizarRecibo(Recibo reciboAtualizado) {
+    if (reciboAtualizado == null) {
+        return false;
+    }
+    for (int i = 0; i < recibos.size(); i++) {
+        Recibo r = recibos.get(i);
+        // Encontra o recibo na lista pelo seu ID único
+        if (r.getId() == reciboAtualizado.getId()) {
+            recibos.set(i, reciboAtualizado); // Substitui o objeto antigo pelo novo
+            salvarDados(); // Persiste a lista atualizada no arquivo
+            return true;
+        }
+    }
+    return false; // Retorna false se o recibo não foi encontrado
+}
 
     public static boolean removerProcesso(String base, String numeroProcesso) {
         // O ideal seria remover por ID, mas manter a remoção por base/numero por enquanto.
