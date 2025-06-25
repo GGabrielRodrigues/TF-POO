@@ -56,8 +56,8 @@ class ExtravioBagagemTest {
     @DisplayName("Deve gerar IDs sequenciais para novos processos de extravio")
     void testGeracaoAutomaticaDeId() {
         // 1. Preparação (Arrange) e 2. Ação (Act)
-        ExtravioBagagem processo1 = new ExtravioBagagem("ATL", "33333", new Date(), "ETQ-003");
-        ExtravioBagagem processo2 = new ExtravioBagagem("LAX", "44444", new Date(), "ETQ-004");
+        ExtravioBagagem processo1 = new ExtravioBagagem("ATL", "33333", new Date(), "ETQ-00300000");
+        ExtravioBagagem processo2 = new ExtravioBagagem("LAX", "44444", new Date(), "ETQ-00400000");
         
         // 3. Verificação (Assert)
         // O contador foi resetado para 0 no setUp, então os IDs devem ser 1 e 2.
@@ -72,15 +72,18 @@ class ExtravioBagagemTest {
     @DisplayName("Deve permitir a alteração de dados via setters")
     void testSetters() {
         // 1. Preparação (Arrange)
-        ExtravioBagagem processo = new ExtravioBagagem("JFK", "55555", dataDeAbertura, "ETQ-JFK-01");
+        ExtravioBagagem processo = new ExtravioBagagem("JFK", "55555", dataDeAbertura, "ET-01234567");
+        String novaEtiqueta = "ET-98765432";
         
         // 2. Ação (Act)
-        processo.setBase("ORD"); // Setter de Processo
-        processo.setEtiquetaBagagemExtraviada("ETQ-ORD-02"); // Setter de ExtravioBagagem
+        // REVISÃO: A linha processo.setBase("ORD") foi removida porque 'base' agora é 'final'.
+        processo.setEtiquetaBagagemExtraviada(novaEtiqueta); // Setter de ExtravioBagagem
         
         // 3. Verificação (Assert)
-        assertEquals("ORD", processo.getBase(), "O setter de base falhou.");
-        assertEquals("ETQ-ORD-02", processo.getEtiquetaBagagemExtraviada(), "O setter da etiqueta de extravio falhou.");
+        // REVISÃO: O valor esperado no assertEquals foi corrigido para o valor que realmente foi definido.
+        assertEquals(novaEtiqueta, processo.getEtiquetaBagagemExtraviada(), "O setter da etiqueta de extravio falhou.");
+        // A base não deve ter sido alterada
+        assertEquals("JFK", processo.getBase(), "A base não deveria mudar, pois é final.");
     }
     
     /**
@@ -91,7 +94,7 @@ class ExtravioBagagemTest {
     @DisplayName("Deve editar informações do processo e do extravio via Map")
     void testEditarInformacoes() throws InterruptedException {
         // 1. Preparação (Arrange)
-        ExtravioBagagem processo = new ExtravioBagagem("SFO", "20202", dataDeAbertura, "ETQ-SFO-01");
+        ExtravioBagagem processo = new ExtravioBagagem("SFO", "20202", dataDeAbertura, "ET-1234567");
         
         // Simula a passagem de um tempo.
         TimeUnit.MILLISECONDS.sleep(10); 
@@ -100,14 +103,14 @@ class ExtravioBagagemTest {
         // Cria um mapa com os novos dados.
         Map<String, Object> novosDados = new HashMap<>();
         novosDados.put("dataAbertura", novaData); // Dado herdado de Processo
-        novosDados.put("etiquetaBagagemExtraviada", "ETQ-SFO-01-ENCONTRADA"); // Dado específico de ExtravioBagagem
+        novosDados.put("etiquetaBagagemExtraviada", "ET-34543245"); // Dado específico de ExtravioBagagem
         
         // 2. Ação (Act)
         processo.editarInformacoes(novosDados);
         
         // 3. Verificação (Assert)
         assertEquals(novaData, processo.getDataAbertura(), "A data de abertura deveria ter sido atualizada.");
-        assertEquals("ETQ-SFO-01-ENCONTRADA", processo.getEtiquetaBagagemExtraviada(), "A etiqueta de extravio deveria ter sido atualizada.");
+        assertEquals("ET-34543245", processo.getEtiquetaBagagemExtraviada(), "A etiqueta de extravio deveria ter sido atualizada.");
         assertEquals("SFO", processo.getBase(), "A base não deveria ter sido alterada.");
     }
 }

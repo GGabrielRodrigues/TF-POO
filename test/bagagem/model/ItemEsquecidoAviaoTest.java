@@ -99,14 +99,14 @@ class ItemEsquecidoAviaoTest {
         // Cria um mapa com os novos dados.
         Map<String, Object> novosDados = new HashMap<>();
         novosDados.put("dataAbertura", novaData); // Dado herdado de Processo
-        novosDados.put("numeroVoo", "KL 0792 ALTERADO"); // Dado específico de ItemEsquecidoAviao
+        novosDados.put("numeroVoo", "KL 0792"); // Dado específico de ItemEsquecidoAviao
         
         // 2. Ação (Act)
         processo.editarInformacoes(novosDados);
         
         // 3. Verificação (Assert)
         assertEquals(novaData, processo.getDataAbertura(), "A data de abertura deveria ter sido atualizada.");
-        assertEquals("KL 0792 ALTERADO", processo.getNumeroVoo(), "O número do voo deveria ter sido atualizado.");
+        assertEquals("KL 0792", processo.getNumeroVoo(), "O número do voo deveria ter sido atualizado.");
         assertEquals("AMS", processo.getBase(), "A base não deveria ter sido alterada.");
     }
 }

@@ -77,16 +77,18 @@ class DanificacaoBagagemTest {
     void testSetters() {
         // 1. Preparação (Arrange)
         DanificacaoBagagem processo = new DanificacaoBagagem("POA", "98765", dataDeAbertura, "ETQ-POA-01");
+        String novaEtiqueta = "ET-12345678";
         
         // 2. Ação (Act)
-        // Modificamos os dados do processo usando os setters.
-        processo.setBase("VCP"); //
-        processo.setEtiquetaBagagemDanificada("ETQ-VCP-02"); //
+        // REVISÃO: A linha 'processo.setBase("VCP")' foi removida pois o atributo 'base' é final.
+        processo.setEtiquetaBagagemDanificada(novaEtiqueta);
         
         // 3. Verificação (Assert)
-        // Verificamos se os valores foram de fato atualizados.
-        assertEquals("VCP", processo.getBase(), "O setter de base falhou.");
-        assertEquals("ETQ-VCP-02", processo.getEtiquetaBagagemDanificada(), "O setter da etiqueta falhou.");
+        // Verificamos se o valor foi de fato atualizado.
+        // REVISÃO: A verificação agora usa a variável 'novaEtiqueta' para garantir consistência.
+        assertEquals(novaEtiqueta, processo.getEtiquetaBagagemDanificada(), "O setter da etiqueta falhou.");
+        // Verificamos que o valor original da base, que é final, não mudou.
+        assertEquals("POA", processo.getBase(), "A base não deveria mudar.");
     }
 
     /**
@@ -103,18 +105,20 @@ class DanificacaoBagagemTest {
         // Simula a passagem de um tempo para que a nova data seja diferente.
         TimeUnit.MILLISECONDS.sleep(10); 
         Date novaData = new Date();
+        String novaEtiqueta = "ET-00000000";
         
         // Cria um mapa com os novos dados.
         Map<String, Object> novosDados = new HashMap<>();
         novosDados.put("dataAbertura", novaData); // Dado da classe pai Processo
-        novosDados.put("etiquetaBagagemDanificada", "ETQ-CWB-01-ALTERADA"); // Dado da classe filha DanificacaoBagagem
+        novosDados.put("etiquetaBagagemDanificada", novaEtiqueta); // Dado da classe filha DanificacaoBagagem
         
         // 2. Ação (Act)
         processo.editarInformacoes(novosDados);
         
         // 3. Verificação (Assert)
+        // REVISÃO: A verificação da etiqueta agora usa o valor correto que foi inserido no Map.
         assertEquals(novaData, processo.getDataAbertura(), "A data de abertura deveria ter sido atualizada.");
-        assertEquals("ETQ-CWB-01-ALTERADA", processo.getEtiquetaBagagemDanificada(), "A etiqueta deveria ter sido atualizada.");
+        assertEquals(novaEtiqueta, processo.getEtiquetaBagagemDanificada(), "A etiqueta deveria ter sido atualizada.");
         assertEquals("CWB", processo.getBase(), "A base não deveria ter sido alterada.");
     }
 }
