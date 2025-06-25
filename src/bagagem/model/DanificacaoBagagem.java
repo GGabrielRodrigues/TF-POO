@@ -1,4 +1,4 @@
-package bagagem.model; // Garanta que o pacote está correto
+package bagagem.model; 
 
 import java.util.Date;
 import java.util.Map;
